@@ -647,6 +647,7 @@ Terrain3D::Terrain3D() {
 			break;
 		}
 	}
+	set_debug_level(DEBUG);
 }
 
 void Terrain3D::set_debug_level(const int p_level) {

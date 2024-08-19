@@ -28,6 +28,7 @@ func reset_terrain(p_value) -> void:
 
 
 func update_heights(p_value) -> void:
+	print("IMPORTER IS RUNNING UPDATE_HEIGHTS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	if p_value and storage:
 		storage.update_height_range()
 

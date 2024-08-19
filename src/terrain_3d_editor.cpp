@@ -94,6 +94,9 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 		case ROUGHNESS:
 			map_type = Terrain3DStorage::TYPE_COLOR;
 			break;
+		case GRASS:
+			map_type = Terrain3DStorage::TYPE_GRASS;
+			break;
 		default:
 			LOG(ERROR, "Invalid tool selected");
 			return;
@@ -423,6 +426,13 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 								dest.a = Math::lerp(real_t(src.a), real_t(.5f + .5f * 0.5f), brush_alpha * strength);
 							}
 							break;
+					}
+				} else if (map_type == Terrain3DStorage::TYPE_GRASS){
+					switch (_tool) {
+							case GRASS:
+								dest = src.lerp((_operation == ADD) ? COLOR_WHITE : COLOR_BLACK, brush_alpha * strength);
+								dest.a = src.a;
+							break;
 						default:
 							break;
 					}
@@ -506,6 +516,11 @@ Dictionary Terrain3DEditor::_get_undo_data() const {
 			data["color_map"] = _terrain->get_storage()->get_maps_copy(Terrain3DStorage::TYPE_COLOR);
 			break;
 
+		case GRASS:
+			LOG(DEBUG, "Storing grass maps");
+			data["grass_map"] = _terrain->get_storage()->get_maps_copy(Terrain3DStorage::TYPE_GRASS);
+			break;
+
 		case INSTANCER:
 			data["multimeshes"] = _terrain->get_storage()->get_multimeshes().duplicate(true);
 			LOG(DEBUG, "Storing Multimesh: ", data["multimeshes"]);
@@ -563,6 +578,8 @@ void Terrain3DEditor::_apply_undo(const Dictionary &p_set) {
 			_terrain->get_storage()->set_maps(Terrain3DStorage::TYPE_CONTROL, p_set[key]);
 		} else if (key == "color_map") {
 			_terrain->get_storage()->set_maps(Terrain3DStorage::TYPE_COLOR, p_set[key]);
+		} else if (key == "grass_map") {
+			_terrain->get_storage()->set_maps(Terrain3DStorage::TYPE_GRASS, p_set[key]); 
 		} else if (key == "height_range") {
 			_terrain->get_storage()->set_height_range(p_set[key]);
 		} else if (key == "edited_area") {
@@ -710,6 +727,7 @@ void Terrain3DEditor::_bind_methods() {
 	BIND_ENUM_CONSTANT(HEIGHT);
 	BIND_ENUM_CONSTANT(TEXTURE);
 	BIND_ENUM_CONSTANT(COLOR);
+	BIND_ENUM_CONSTANT(GRASS);
 	BIND_ENUM_CONSTANT(ROUGHNESS);
 	BIND_ENUM_CONSTANT(ANGLE);
 	BIND_ENUM_CONSTANT(SCALE);

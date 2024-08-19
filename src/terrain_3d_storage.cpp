@@ -20,6 +20,7 @@ void Terrain3DStorage::_clear() {
 	_generated_height_maps.clear();
 	_generated_control_maps.clear();
 	_generated_color_maps.clear();
+	_generated_grass_maps.clear();
 	set_multimeshes(Dictionary());
 }
 
@@ -165,7 +166,7 @@ int Terrain3DStorage::get_region_index_from_offset(const Vector2i &p_region_offs
 
 /** Adds a region to the terrain
  * Option to include an array of Images to use for maps
- * Map types are Height:0, Control:1, Color:2, defined in MapType
+ * Map types are Height:0, Control:1, Color:2, Grass:3, defined in MapType
  * If the region already exists and maps are included, the current maps will be overwritten
  * Parameters:
  *	p_global_position - the world location to place the region, rounded down to the nearest region_size multiple
@@ -217,6 +218,7 @@ Error Terrain3DStorage::add_region(const Vector3 &p_global_position, const Typed
 	_height_maps.push_back(images[TYPE_HEIGHT]);
 	_control_maps.push_back(images[TYPE_CONTROL]);
 	_color_maps.push_back(images[TYPE_COLOR]);
+	_grass_maps.push_back(images[TYPE_GRASS]);
 	_region_offsets.push_back(uv_offset);
 	LOG(DEBUG, "Total regions after pushback: ", _region_offsets.size());
 
@@ -227,6 +229,7 @@ Error Terrain3DStorage::add_region(const Vector3 &p_global_position, const Typed
 		_generated_height_maps.clear();
 		_generated_control_maps.clear();
 		_generated_color_maps.clear();
+		_generated_grass_maps.clear();
 		update_regions();
 		notify_property_list_changed();
 		emit_changed();
@@ -250,6 +253,8 @@ void Terrain3DStorage::remove_region(const Vector3 &p_global_position, const boo
 	LOG(DEBUG, "Removed control maps, new size: ", _control_maps.size());
 	_color_maps.remove_at(index);
 	LOG(DEBUG, "Removed colormaps, new size: ", _color_maps.size());
+	_grass_maps.remove_at(index);
+	LOG(DEBUG, "Removed grassmaps, new size: ", _grass_maps.size());
 
 	if (_height_maps.size() == 0) {
 		_height_range = Vector2(0.f, 0.f);
@@ -262,6 +267,7 @@ void Terrain3DStorage::remove_region(const Vector3 &p_global_position, const boo
 		_generated_height_maps.clear();
 		_generated_control_maps.clear();
 		_generated_color_maps.clear();
+		_generated_grass_maps.clear();
 		update_regions();
 		notify_property_list_changed();
 		emit_changed();
@@ -295,6 +301,17 @@ void Terrain3DStorage::update_regions(const bool p_force_emit) {
 			map->generate_mipmaps();
 		}
 		_generated_color_maps.create(_color_maps);
+		force_emit = true;
+		_modified = true;
+	}
+
+	if (_generated_grass_maps.is_dirty()) {
+		LOG(DEBUG_CONT, "Regenerating grass layered texture from ", _grass_maps.size(), " maps");
+		for (int i = 0; i < _grass_maps.size(); i++) {
+			Ref<Image> map = _grass_maps[i];
+			map->generate_mipmaps();
+		}
+		_generated_grass_maps.create(_grass_maps);
 		force_emit = true;
 		_modified = true;
 	}
@@ -349,6 +366,14 @@ void Terrain3DStorage::set_map_region(const MapType p_map_type, const int p_regi
 				LOG(ERROR, "Requested index is out of bounds. color_maps size: ", _color_maps.size());
 			}
 			break;
+		case TYPE_GRASS:
+			if (p_region_index >= 0 && p_region_index < _grass_maps.size()) {
+				_grass_maps[p_region_index] = p_image;
+				force_update_maps(TYPE_GRASS);
+			} else {
+				LOG(ERROR, "Requested index is out of bounds. grass_maps size: ", _grass_maps.size());
+			}
+			break;
 		default:
 			LOG(ERROR, "Requested map type is invalid");
 			break;
@@ -378,6 +403,13 @@ Ref<Image> Terrain3DStorage::get_map_region(const MapType p_map_type, const int 
 				LOG(ERROR, "Requested index is out of bounds. color_maps size: ", _color_maps.size());
 			}
 			break;
+		case TYPE_GRASS:
+			if (p_region_index >= 0 && p_region_index < _grass_maps.size()) {
+				return _grass_maps[p_region_index];
+			} else {
+				LOG(ERROR, "Requested index is out of bounds. grass_maps size: ", _grass_maps.size());
+			}
+			break;
 		default:
 			LOG(ERROR, "Requested map type is invalid");
 			break;
@@ -397,6 +429,9 @@ void Terrain3DStorage::set_maps(const MapType p_map_type, const TypedArray<Image
 			break;
 		case TYPE_COLOR:
 			_color_maps = sanitize_maps(TYPE_COLOR, p_maps);
+			break;
+		case TYPE_GRASS:
+			_grass_maps = sanitize_maps(TYPE_GRASS, p_maps);
 			break;
 		default:
 			break;
@@ -418,6 +453,9 @@ TypedArray<Image> Terrain3DStorage::get_maps(const MapType p_map_type) const {
 			break;
 		case TYPE_COLOR:
 			return get_color_maps();
+			break;
+		case TYPE_GRASS:
+			return get_grass_maps();
 			break;
 		default:
 			break;
@@ -578,7 +616,7 @@ real_t Terrain3DStorage::get_scale(const Vector3 &p_global_position) const {
  * Verifies size, vailidity, and format of maps
  * Creates filled blanks if lacking
  * p_map_type:
- *	TYPE_HEIGHT, TYPE_CONTROL, TYPE_COLOR: uniform set - p_maps are all the same type, size=N
+ *	TYPE_HEIGHT, TYPE_CONTROL, TYPE_COLOR, TYPE_GRASS: uniform set - p_maps are all the same type, size=N
  *	TYPE_MAX = region set - p_maps is [ height, control, color ], size=3
  **/
 TypedArray<Image> Terrain3DStorage::sanitize_maps(const MapType p_map_type, const TypedArray<Image> &p_maps) const {
@@ -656,10 +694,14 @@ void Terrain3DStorage::force_update_maps(const MapType p_map_type) {
 		case TYPE_COLOR:
 			_generated_color_maps.clear();
 			break;
+		case TYPE_GRASS:
+			_generated_grass_maps.clear();
+			break;
 		default:
 			_generated_height_maps.clear();
 			_generated_control_maps.clear();
 			_generated_color_maps.clear();
+			_generated_grass_maps.clear();
 			break;
 	}
 	update_regions();
@@ -685,6 +727,17 @@ void Terrain3DStorage::save() {
 		LOG(DEBUG, "Saving storage version: ", vformat("%.3f", CURRENT_VERSION));
 		set_version(CURRENT_VERSION);
 		Error err;
+
+		// Lazy way to do this, should add an actual upgrade system.
+		int num_regions = _region_offsets.size();
+		if (_grass_maps.size() != num_regions){
+			LOG(DEBUG, "Number of grass maps is different than the number of regions. Generating default grass maps.");
+			_grass_maps.resize(num_regions);
+			for (int i = 0; i < num_regions; i ++){
+				_grass_maps[i] = Util::get_filled_image(_region_sizev, COLOR[TYPE_GRASS], false, FORMAT[TYPE_GRASS]);
+			}
+		}
+
 		if (_save_16_bit) {
 			LOG(DEBUG, "16-bit save requested, converting heightmaps");
 			TypedArray<Image> original_maps;
@@ -1044,10 +1097,12 @@ void Terrain3DStorage::print_audit_data() const {
 	Util::dump_maps(_height_maps, "Height maps");
 	Util::dump_maps(_control_maps, "Control maps");
 	Util::dump_maps(_color_maps, "Color maps");
+	Util::dump_maps(_grass_maps, "Grass maps");
 
 	Util::dump_gentex(_generated_height_maps, "height");
 	Util::dump_gentex(_generated_control_maps, "control");
 	Util::dump_gentex(_generated_color_maps, "color");
+	Util::dump_gentex(_generated_grass_maps, "grass");
 }
 
 ///////////////////////////
@@ -1058,6 +1113,7 @@ void Terrain3DStorage::_bind_methods() {
 	BIND_ENUM_CONSTANT(TYPE_HEIGHT);
 	BIND_ENUM_CONSTANT(TYPE_CONTROL);
 	BIND_ENUM_CONSTANT(TYPE_COLOR);
+	BIND_ENUM_CONSTANT(TYPE_GRASS);
 	BIND_ENUM_CONSTANT(TYPE_MAX);
 
 	//BIND_ENUM_CONSTANT(SIZE_64);
@@ -1104,7 +1160,9 @@ void Terrain3DStorage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_control_maps", "maps"), &Terrain3DStorage::set_control_maps);
 	ClassDB::bind_method(D_METHOD("get_control_maps"), &Terrain3DStorage::get_control_maps);
 	ClassDB::bind_method(D_METHOD("set_color_maps", "maps"), &Terrain3DStorage::set_color_maps);
+	ClassDB::bind_method(D_METHOD("set_grass_maps", "maps"), &Terrain3DStorage::set_grass_maps);
 	ClassDB::bind_method(D_METHOD("get_color_maps"), &Terrain3DStorage::get_color_maps);
+	ClassDB::bind_method(D_METHOD("get_grass_maps"), &Terrain3DStorage::get_grass_maps);
 	ClassDB::bind_method(D_METHOD("set_pixel", "map_type", "global_position", "pixel"), &Terrain3DStorage::set_pixel);
 	ClassDB::bind_method(D_METHOD("get_pixel", "map_type", "global_position"), &Terrain3DStorage::get_pixel);
 	ClassDB::bind_method(D_METHOD("set_height", "global_position", "height"), &Terrain3DStorage::set_height);
@@ -1141,6 +1199,7 @@ void Terrain3DStorage::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "height_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "set_height_maps", "get_height_maps");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "control_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "set_control_maps", "get_control_maps");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "color_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "set_color_maps", "get_color_maps");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "grass_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "set_grass_maps", "get_grass_maps");
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "multimeshes", PROPERTY_HINT_NONE, "", ro_flags), "set_multimeshes", "get_multimeshes");
 
 	ADD_SIGNAL(MethodInfo("height_maps_changed"));

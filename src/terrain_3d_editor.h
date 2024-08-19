@@ -45,7 +45,8 @@ public: // Constants
 		INSTANCER,
 		ANGLE, // used for picking, TODO change to a picking tool
 		SCALE, // used for picking
-		TOOL_MAX,
+		GRASS,
+		TOOL_MAX
 	};
 
 	static inline const char *TOOLNAME[] = {
@@ -60,7 +61,8 @@ public: // Constants
 		"Instancer",
 		"Angle",
 		"Scale",
-		"TOOL_MAX",
+		"Grass",
+		"TOOL_MAX"
 	};
 
 private:

@@ -19,7 +19,7 @@ class Terrain3DStorage : public Resource {
 	CLASS_NAME();
 
 public: // Constants
-	static inline const real_t CURRENT_VERSION = 0.92f;
+	static inline const real_t CURRENT_VERSION = 0.93f;
 	static inline const int REGION_MAP_SIZE = 16;
 	static inline const Vector2i REGION_MAP_VSIZE = Vector2i(REGION_MAP_SIZE, REGION_MAP_SIZE);
 
@@ -27,6 +27,7 @@ public: // Constants
 		TYPE_HEIGHT,
 		TYPE_CONTROL,
 		TYPE_COLOR,
+		TYPE_GRASS,
 		TYPE_MAX,
 	};
 
@@ -34,6 +35,7 @@ public: // Constants
 		Image::FORMAT_RF, // TYPE_HEIGHT
 		Image::FORMAT_RF, // TYPE_CONTROL
 		Image::FORMAT_RGBA8, // TYPE_COLOR
+		Image::FORMAT_RGBA8, // TYPE_GRASS
 		Image::Format(TYPE_MAX), // Proper size of array instead of FORMAT_MAX
 	};
 
@@ -41,6 +43,7 @@ public: // Constants
 		"TYPE_HEIGHT",
 		"TYPE_CONTROL",
 		"TYPE_COLOR",
+		"TYPE_GRASS",
 		"TYPE_MAX",
 	};
 
@@ -48,6 +51,7 @@ public: // Constants
 		COLOR_BLACK, // TYPE_HEIGHT
 		COLOR_CONTROL, // TYPE_CONTROL
 		COLOR_ROUGHNESS, // TYPE_COLOR
+		COLOR_BLACK, // TYPE_GRASS
 		COLOR_NAN, // TYPE_MAX, unused just in case someone indexes the array
 	};
 
@@ -77,6 +81,7 @@ private:
 	GeneratedTexture _generated_height_maps;
 	GeneratedTexture _generated_control_maps;
 	GeneratedTexture _generated_color_maps;
+	GeneratedTexture _generated_grass_maps;
 
 	AABB _edited_area;
 	uint64_t _last_region_bounds_error = 0;
@@ -98,6 +103,7 @@ private:
 	TypedArray<Image> _height_maps;
 	TypedArray<Image> _control_maps;
 	TypedArray<Image> _color_maps;
+	TypedArray<Image> _grass_maps;
 
 	// Foliage Instancer contains MultiMeshes saved to disk
 	// Dictionary[region_offset:Vector2i] -> Dictionary[mesh_id:int] -> MultiMesh
@@ -156,7 +162,9 @@ public:
 	TypedArray<Image> get_control_maps() const { return _control_maps; }
 	RID get_control_rid() const { return _generated_control_maps.get_rid(); }
 	void set_color_maps(const TypedArray<Image> &p_maps) { set_maps(TYPE_COLOR, p_maps); }
+	void set_grass_maps(const TypedArray<Image> &p_maps) { set_maps(TYPE_GRASS, p_maps); }
 	TypedArray<Image> get_color_maps() const { return _color_maps; }
+	TypedArray<Image> get_grass_maps() const { return _grass_maps; }
 	RID get_color_rid() const { return _generated_color_maps.get_rid(); }
 	void set_pixel(const MapType p_map_type, const Vector3 &p_global_position, const Color &p_pixel);
 	Color get_pixel(const MapType p_map_type, const Vector3 &p_global_position) const;

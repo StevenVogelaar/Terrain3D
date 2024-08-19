@@ -18,6 +18,7 @@ const ICON_AUTOSHADER: String = "res://addons/terrain_3d/icons/autoshader.svg"
 const ICON_HOLES: String = "res://addons/terrain_3d/icons/holes.svg"
 const ICON_NAVIGATION: String = "res://addons/terrain_3d/icons/navigation.svg"
 const ICON_INSTANCER: String = "res://addons/terrain_3d/icons/multimesh.svg"
+const ICON_GRASS: String = "res://addons/terrain_3d/icons/multimesh.svg"
 
 var add_tool_group: ButtonGroup = ButtonGroup.new()
 var sub_tool_group: ButtonGroup = ButtonGroup.new()
@@ -84,6 +85,10 @@ func _ready() -> void:
 	add_tool_button({ "tool":Terrain3DEditor.INSTANCER,
 		"add_text":"Instance Meshes", "add_op":Terrain3DEditor.ADD, "add_icon":ICON_INSTANCER,
 		"sub_text":"Remove Meshes", "sub_op":Terrain3DEditor.SUBTRACT })
+
+	add_tool_button({ "tool":Terrain3DEditor.GRASS,
+		"add_text":"Paint Grass", "add_op":Terrain3DEditor.ADD, "add_icon":ICON_GRASS,
+		"sub_text":"Remove Grass", "sub_op":Terrain3DEditor.SUBTRACT })
 
 	# Select first button
 	var buttons: Array[BaseButton] = add_tool_group.get_buttons()

@@ -16,6 +16,7 @@ const COLOR_FLATTEN := Color.BLUE_VIOLET
 const COLOR_HEIGHT := Color(0., 0.32, .4)
 const COLOR_SLOPE := Color.YELLOW
 const COLOR_PAINT := Color.FOREST_GREEN
+const COLOR_GRASS := Color.BLACK
 const COLOR_SPRAY := Color.SEA_GREEN
 const COLOR_ROUGHNESS := Color.ROYAL_BLUE
 const COLOR_AUTOSHADER := Color.DODGER_BLUE
@@ -25,6 +26,7 @@ const COLOR_INSTANCER := Color.CRIMSON
 const COLOR_PICK_COLOR := Color.WHITE
 const COLOR_PICK_HEIGHT := Color.DARK_RED
 const COLOR_PICK_ROUGH := Color.ROYAL_BLUE
+const COLOR_PICK_GRASS := Color.BLACK
 
 const MODIFIER_KEYS := [KEY_CTRL, KEY_SHIFT, KEY_ALT]
 const OP_NONE: int = 0x0
@@ -177,6 +179,12 @@ func _on_tool_changed(p_tool: Terrain3DEditor.Tool, p_operation: Terrain3DEditor
 			to_show.push_back("color_picker")
 			to_show.push_back("remove")
 
+		Terrain3DEditor.GRASS:
+			to_show.push_back("brush")
+			to_show.push_back("size")
+			to_show.push_back("strength")
+			to_show.push_back("remove")
+
 		Terrain3DEditor.ROUGHNESS:
 			to_show.push_back("brush")
 			to_show.push_back("size")
@@ -283,6 +291,8 @@ func update_decal() -> void:
 				decal.modulate = COLOR_PICK_HEIGHT
 			Terrain3DEditor.COLOR:
 				decal.modulate = COLOR_PICK_COLOR
+			Terrain3DEditor.GRASS:
+				decal.modulate = COLOR_PICK_GRASS
 			Terrain3DEditor.ROUGHNESS:
 				decal.modulate = COLOR_PICK_ROUGH
 		decal.modulate.a = 1.0
@@ -325,6 +335,9 @@ func update_decal() -> void:
 			Terrain3DEditor.COLOR:
 				decal.modulate = brush_data["color"].srgb_to_linear()
 				decal.modulate.a *= clamp(brush_data["strength"], .2, .5)
+			Terrain3DEditor.GRASS:
+				decal.modulate = COLOR_GRASS
+				decal.modulate.a = clamp(brush_data["strength"], .2, .5)
 			Terrain3DEditor.ROUGHNESS:
 				decal.modulate = COLOR_ROUGHNESS
 				decal.modulate.a = clamp(brush_data["strength"], .2, .5)
@@ -410,6 +423,8 @@ func pick(p_global_position: Vector3) -> void:
 				color = plugin.terrain.get_storage().get_pixel(Terrain3DStorage.TYPE_COLOR, p_global_position)
 			Terrain3DEditor.COLOR:
 				color = plugin.terrain.get_storage().get_color(p_global_position)
+			Terrain3DEditor.GRASS:
+				color = plugin.terrain.get_storage().get_pixel(Terrain3DStorage.TYPE_GRASS, p_global_position)
 			Terrain3DEditor.ANGLE:
 				color = Color(plugin.terrain.get_storage().get_angle(p_global_position), 0., 0., 1.)
 			Terrain3DEditor.SCALE:
@@ -457,7 +472,7 @@ func _modify_operation(p_operation: Terrain3DEditor.Operation) -> Terrain3DEdito
 	if DisplayServer.is_touchscreen_available():
 		var remove_tools := [Terrain3DEditor.REGION, Terrain3DEditor.HEIGHT, Terrain3DEditor.AUTOSHADER,
 			Terrain3DEditor.HOLES, Terrain3DEditor.INSTANCER, Terrain3DEditor.NAVIGATION, 
-			Terrain3DEditor.COLOR, Terrain3DEditor.ROUGHNESS]
+			Terrain3DEditor.COLOR, Terrain3DEditor.GRASS, Terrain3DEditor.ROUGHNESS]
 		remove_checked = brush_data.get("remove", false) && plugin.editor.get_tool() in remove_tools
 		
 	if modifier_ctrl or remove_checked:
