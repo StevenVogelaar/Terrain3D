@@ -183,6 +183,7 @@ func _on_tool_changed(p_tool: Terrain3DEditor.Tool, p_operation: Terrain3DEditor
 			to_show.push_back("brush")
 			to_show.push_back("size")
 			to_show.push_back("strength")
+			to_show.push_back("grass_height")
 			to_show.push_back("remove")
 
 		Terrain3DEditor.ROUGHNESS:

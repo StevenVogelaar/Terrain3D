@@ -120,6 +120,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 	real_t gamma = _brush_data["gamma"];
 	bool lift_floor = _brush_data["lift_floor"];
 	bool flatten_peaks = _brush_data["flatten_peaks"];
+	real_t grass_height = _brush_data["grass_height"];
 
 	real_t randf = UtilityFunctions::randf();
 	real_t rot = randf * Math_PI * real_t(_brush_data["jitter"]);
@@ -430,7 +431,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 				} else if (map_type == Terrain3DStorage::TYPE_GRASS){
 					switch (_tool) {
 							case GRASS:
-								dest = src.lerp((_operation == ADD) ? COLOR_WHITE : COLOR_BLACK, brush_alpha * strength);
+								dest = src.lerp(((_operation == ADD) ? COLOR_WHITE : COLOR_BLACK) * grass_height, brush_alpha * strength);
 								dest.a = src.a;
 							break;
 						default:
@@ -639,6 +640,7 @@ void Terrain3DEditor::set_brush_data(const Dictionary &p_data) {
 	_brush_data["gamma"] = CLAMP(real_t(p_data.get("gamma", 1.f)), 0.1f, 2.f);
 	_brush_data["jitter"] = CLAMP(real_t(p_data.get("jitter", 0.f)), 0.f, 1.f);
 	_brush_data["gradient_points"] = p_data.get("gradient_points", PackedVector3Array());
+	_brush_data["grass_height"] = CLAMP(real_t(p_data.get("grass_height", 100.f)), 0.f, 100.f) * 0.01f; // Percentage
 
 	LOG(DEBUG_CONT, "Setting new, sanitized brush data: ");
 	Array keys = _brush_data.keys();
