@@ -35,7 +35,7 @@ public: // Constants
 		Image::FORMAT_RF, // TYPE_HEIGHT
 		Image::FORMAT_RF, // TYPE_CONTROL
 		Image::FORMAT_RGBA8, // TYPE_COLOR
-		Image::FORMAT_RGBA8, // TYPE_GRASS
+		Image::FORMAT_RF, // TYPE_GRASS
 		Image::Format(TYPE_MAX), // Proper size of array instead of FORMAT_MAX
 	};
 
@@ -51,7 +51,7 @@ public: // Constants
 		COLOR_BLACK, // TYPE_HEIGHT
 		COLOR_CONTROL, // TYPE_CONTROL
 		COLOR_ROUGHNESS, // TYPE_COLOR
-		COLOR_BLACK, // TYPE_GRASS
+		COLOR_GRASS, // TYPE_GRASS
 		COLOR_NAN, // TYPE_MAX, unused just in case someone indexes the array
 	};
 

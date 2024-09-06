@@ -127,6 +127,14 @@ inline bool is_auto(const uint32_t p_pixel) { return (p_pixel & 0x1) == 1; }
 inline bool is_auto(const float p_pixel) { return is_auto(as_uint(p_pixel)); }
 inline uint32_t enc_auto(const bool p_autosh) { return p_autosh & 0x1; }
 
+inline uint8_t get_grass(const uint32_t p_pixel) { return p_pixel & 0xFF; }
+inline uint8_t get_grass(const float p_pixel) { return get_grass(as_uint(p_pixel)); }
+inline uint32_t enc_grass(const uint8_t p_grass) { return p_grass & 0xFF; }
+
+inline bool is_ground_1(const uint32_t p_pixel) { return (p_pixel >> 8 & 0x1) == 1; }
+inline bool is_ground_1(const float p_pixel) { return is_ground_1(as_uint(p_pixel)); }
+inline uint32_t enc_ground_1(const bool p_ground_1) { return (p_ground_1 & 0x1) << 8; }
+
 // Aliases for GDScript since it can't handle overridden functions
 inline uint32_t gd_get_base(const uint32_t p_pixel) { return get_base(p_pixel); }
 inline uint32_t gd_enc_base(const uint32_t p_base) { return enc_base(p_base); }
