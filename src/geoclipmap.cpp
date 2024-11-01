@@ -9,6 +9,95 @@
 // Private Functions
 ///////////////////////////
 
+// Half each triangle, have to check for longest side.
+void GeoClipMap::_subdivide_half(PackedVector3Array &vertices, PackedInt32Array &indices) {
+	PackedVector3Array new_vertices;
+	PackedInt32Array new_indices;
+
+	std::unordered_map<Vector3, int, Vector3Hash> vertex_map;
+
+	auto midpoint = [](const Vector3 &p1, const Vector3 &p2) -> Vector3 {
+		return (p1 + p2) / 2.0f;
+	};
+
+	auto find_or_add_vertex = [&vertex_map, &new_vertices](const Vector3 &vertex) -> int {
+		auto it = vertex_map.find(vertex);
+		if (it != vertex_map.end()) {
+			return it->second;
+		} else {
+			int index = new_vertices.size();
+			vertex_map[vertex] = index;
+			new_vertices.push_back(vertex);
+			return index;
+		}
+	};
+
+	for (int i = 0; i < indices.size(); i += 3) {
+		int id_0 = indices[i];
+		int id_1 = indices[i + 1];
+		int id_2 = indices[i + 2];
+
+		Vector3 A = vertices[id_0];
+		Vector3 B = vertices[id_1];
+		Vector3 C = vertices[id_2];
+
+		float length_AB = (B - A).length_squared();
+		float length_BC = (C - B).length_squared();
+		float length_CA = (A - C).length_squared();
+
+		// Determine the longest edge and its midpoint, chaos otherwise.
+		int A_id, B_id, C_id, mid_id;
+		if (length_AB >= length_BC && length_AB >= length_CA) {
+			A_id = find_or_add_vertex(A);
+			B_id = find_or_add_vertex(B);
+			C_id = find_or_add_vertex(C);
+			mid_id = find_or_add_vertex(midpoint(A, B));
+
+			new_indices.push_back(A_id);
+			new_indices.push_back(mid_id);
+			new_indices.push_back(C_id);
+
+			new_indices.push_back(mid_id);
+			new_indices.push_back(B_id);
+			new_indices.push_back(C_id);
+
+		} else if (length_BC >= length_AB && length_BC >= length_CA) {
+			A_id = find_or_add_vertex(A);
+			B_id = find_or_add_vertex(B);
+			C_id = find_or_add_vertex(C);
+			mid_id = find_or_add_vertex(midpoint(B, C));
+
+			new_indices.push_back(B_id);
+			new_indices.push_back(mid_id);
+			new_indices.push_back(A_id);
+
+			new_indices.push_back(mid_id);
+			new_indices.push_back(C_id);
+			new_indices.push_back(A_id);
+
+		} else {
+			// length_BC >= length_AB && length_BC >= length_CA
+			A_id = find_or_add_vertex(A);
+			B_id = find_or_add_vertex(B);
+			C_id = find_or_add_vertex(C);
+			mid_id = find_or_add_vertex(midpoint(C, A));
+
+			new_indices.push_back(C_id);
+			new_indices.push_back(mid_id);
+			new_indices.push_back(B_id);
+
+			new_indices.push_back(mid_id);
+			new_indices.push_back(A_id);
+			new_indices.push_back(B_id);
+		}
+	}
+
+	vertices.clear();
+	vertices.append_array(new_vertices);
+	indices.clear();
+	indices.append_array(new_indices);
+}
+
 RID GeoClipMap::_create_mesh(const PackedVector3Array &p_vertices, const PackedInt32Array &p_indices, const AABB &p_aabb) {
 	Array arrays;
 	arrays.resize(RenderingServer::ARRAY_MAX);
@@ -54,6 +143,9 @@ Vector<RID> GeoClipMap::generate(const int p_size, const int p_levels) {
 	RID trim_mesh;
 	RID cross_mesh;
 	RID seam_mesh;
+	RID tile_inner_mesh;
+	RID filler_inner_mesh;
+	RID trim_inner_mesh;
 
 	int TILE_RESOLUTION = p_size;
 	int PATCH_VERT_RESOLUTION = TILE_RESOLUTION + 1;
@@ -95,7 +187,9 @@ Vector<RID> GeoClipMap::generate(const int p_size, const int p_levels) {
 			}
 		}
 
-		aabb = AABB(Vector3(0.f, 0.f, 0.f), Vector3(PATCH_VERT_RESOLUTION, 0.1f, PATCH_VERT_RESOLUTION));
+		aabb = AABB(V3_ZERO, Vector3(PATCH_VERT_RESOLUTION, 0.1f, PATCH_VERT_RESOLUTION));
+		tile_inner_mesh = _create_mesh(vertices, indices, aabb);
+		_subdivide_half(vertices, indices);
 		tile_mesh = _create_mesh(vertices, indices, aabb);
 	}
 
@@ -176,7 +270,8 @@ Vector<RID> GeoClipMap::generate(const int p_size, const int p_levels) {
 				indices[n++] = tr;
 			}
 		}
-
+		filler_inner_mesh = _create_mesh(vertices, indices, aabb);
+		_subdivide_half(vertices, indices);
 		filler_mesh = _create_mesh(vertices, indices, aabb);
 	}
 
@@ -235,7 +330,8 @@ Vector<RID> GeoClipMap::generate(const int p_size, const int p_levels) {
 			indices[n++] = start_of_horizontal + (i + 0) * 2 + 1;
 			indices[n++] = start_of_horizontal + (i + 1) * 2 + 0;
 		}
-
+		trim_inner_mesh = _create_mesh(vertices, indices, aabb);
+		_subdivide_half(vertices, indices);
 		trim_mesh = _create_mesh(vertices, indices, aabb);
 	}
 
@@ -388,7 +484,10 @@ Vector<RID> GeoClipMap::generate(const int p_size, const int p_levels) {
 		filler_mesh,
 		trim_mesh,
 		cross_mesh,
-		seam_mesh
+		seam_mesh,
+		tile_inner_mesh,
+		filler_inner_mesh,
+		trim_inner_mesh,
 	};
 
 	return meshes;

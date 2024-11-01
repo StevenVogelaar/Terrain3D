@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/TokisanGames/Terrain3D/5f5837542a6fff32d8e60c1cca4760afd2f836f6/doc/docs/images/terrain3d.png">
+![Terrain3D Logo](/doc/docs/images/terrain3d.jpg)
 
 # Terrain3D
 A high performance, editable terrain system for Godot 4.
@@ -7,7 +7,7 @@ A high performance, editable terrain system for Godot 4.
 * Written in C++ as a GDExtension addon, which works with official engine builds
 * Can be accessed by GDScript, C#, and any language Godot supports
 * Geometric Clipmap Mesh Terrain, as used in The Witcher 3. See [System Architecture](https://terrain3d.readthedocs.io/en/stable/docs/system_architecture.html) 
-* Up to 16k x 16k in 1k regions (imagine multiple islands without paying for 16k^2 vram)
+* Terrains as small as 64x64m up to 65.5x65.5km (4295km^2) in variable sized regions
 * Up to 32 textures
 * Up to 10 levels of detail
 * Foliage instancing

@@ -80,7 +80,8 @@ public:
 	int get_mesh_count() const { return _mesh_list.size(); }
 	void create_mesh_thumbnails(const int p_id = -1, const Vector2i &p_size = Vector2i(128, 128));
 	void update_mesh_list();
-	void save();
+
+	Error save(const String &p_path = "");
 
 protected:
 	static void _bind_methods();
@@ -88,7 +89,7 @@ protected:
 
 VARIANT_ENUM_CAST(Terrain3DAssets::AssetType);
 
-// Deprecated 0.9.2 - Remove 0.9.3+
+// Deprecated 0.9.2 - Remove 1.0
 
 class Terrain3DTexture : public Terrain3DTextureAsset {
 	GDCLASS(Terrain3DTexture, Terrain3DTextureAsset);

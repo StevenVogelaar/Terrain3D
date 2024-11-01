@@ -63,8 +63,11 @@ Adjusting the vertex color requires that `vertex_color_use_as_albedo` is enabled
 
 ### 4. Paint On The Ground
 
-Paint instances on the terrain. You can remove instances by holding CTRL while painting.
+Paint instances on the terrain. You can remove instances of the selected mesh by holding <kbd>Ctrl</kbd> while painting.
 
+Press <kbd>Ctrl + Shift + LMB</kbd> to remove mesh instances of any type.
+
+See [User Interface](user_interface.md) for additional keys.
 
 ## Limitations
 
@@ -143,7 +146,7 @@ You can find a sample script that will import data from SimpleGrassTextured in `
 1. Click import. The output window and console will report when finished.
 1. Clear the script from your Terrain3D node, and save your scene. 
 
-The instance transforms are now stored in your Storage resource.
+The instance transforms are now stored in your region files.
 
 This script also serves as an example to learn how to use the API for procedural placement. Though this script uses add_multimesh(), you could manually iterate through the SGT multimesh, pull out the transforms, modify them, then send them to the instancer with add_transforms().
 

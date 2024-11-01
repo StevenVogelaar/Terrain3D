@@ -34,14 +34,13 @@ private:
 	Terrain3D *_terrain = nullptr;
 
 	RID _material;
-	RID _shader;
+	Ref<Shader> _shader; // Active shader
+	Dictionary _shader_code; // All loaded shader and INSERT code
 	bool _shader_override_enabled = false;
-	Ref<Shader> _shader_override;
-	Ref<Shader> _shader_tmp;
-	Dictionary _shader_code;
+	Ref<Shader> _shader_override; // User's shader we copy code from
 	mutable TypedArray<StringName> _active_params; // All shader params in the current shader
 	mutable Dictionary _shader_params; // Public shader params saved to disk
-	GeneratedTexture _generated_region_blend_map; // 512x512 blurred image of region_map
+	bool _compatibility = false; // If true, some shader functions will be overriden using #defines.
 
 	// Material Features
 	WorldBackground _world_background = FLAT;
@@ -65,7 +64,9 @@ private:
 	bool _debug_view_tex_height = false;
 	bool _debug_view_tex_normal = false;
 	bool _debug_view_tex_rough = false;
+	bool _debug_view_region_grid = false;
 	bool _debug_view_vertex_grid = false;
+	bool _debug_view_instancer_grid = false;
 
 	// Functions
 	void _preload_shaders();
@@ -74,21 +75,19 @@ private:
 	String _generate_shader_code() const;
 	String _inject_editor_code(const String &p_shader) const;
 	void _update_shader();
-	void _update_regions();
-	void _generate_region_blend_map();
+	void _update_maps();
 	void _update_texture_arrays();
 	void _set_shader_parameters(const Dictionary &p_dict);
 	Dictionary _get_shader_parameters() const { return _shader_params; }
 
 public:
-	Terrain3DMaterial(){};
+	Terrain3DMaterial() {}
 	void initialize(Terrain3D *p_terrain);
 	~Terrain3DMaterial();
 
 	void update();
 	RID get_material_rid() const { return _material; }
-	RID get_shader_rid() const;
-	RID get_region_blend_map() const { return _generated_region_blend_map.get_rid(); }
+	RID get_shader_rid() const { return _shader->get_rid(); }
 
 	// Material settings
 	void set_world_background(const WorldBackground p_background);
@@ -137,10 +136,14 @@ public:
 	bool get_show_texture_normal() const { return _debug_view_tex_normal; }
 	void set_show_texture_rough(const bool p_enabled);
 	bool get_show_texture_rough() const { return _debug_view_tex_rough; }
+	void set_show_region_grid(const bool p_enabled);
+	bool get_show_region_grid() const { return _debug_view_region_grid; }
 	void set_show_vertex_grid(const bool p_enabled);
 	bool get_show_vertex_grid() const { return _debug_view_vertex_grid; }
+	void set_show_instancer_grid(const bool p_enabled);
+	bool get_show_instancer_grid() const { return _debug_view_instancer_grid; }
 
-	void save();
+	Error save(const String &p_path = "");
 
 protected:
 	void _get_property_list(List<PropertyInfo> *p_list) const;

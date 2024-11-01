@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. |logo| image:: docs/images/terrain3d.png
-   :target: _images/terrain3d.png
+.. |logo| image:: docs/images/terrain3d.jpg
+   :target: _images/terrain3d.jpg
 
 |logo|
 
@@ -13,12 +13,8 @@ Terrain3D Documentation
 
 `Terrain3D <https://github.com/TokisanGames/Terrain3D>`_ is a high performance, editable terrain system for Godot 4.
 
-See :doc:`Project Status <docs/project_status>` for development progress.
+Start with :doc:`Introduction <docs/introduction>` and the other pages in the Getting Started section in the left sidebar to learn how to use this system.
 
-Usage
---------
-
-Read the documentation in the Getting Started section, beginning with :doc:`Installation & Upgrades <docs/installation>`.
 
 Credit
 -------------
@@ -86,17 +82,23 @@ Geometry clipmap mesh code created by `Mike J. Savage <https://mikejsavage.co.uk
    :maxdepth: 1
    :caption: Getting Started
 
+   docs/introduction
    docs/tutorial_videos
    docs/installation
+   docs/platforms
    docs/user_interface
+   docs/troubleshooting
+   docs/getting_help
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Basic Usage
+
    docs/texture_prep
    docs/texture_painting
    docs/instancer
    docs/import_export
    docs/tips
-   docs/troubleshooting
-   docs/getting_help
-
 
 .. toctree::
    :maxdepth: 1
@@ -105,7 +107,6 @@ Geometry clipmap mesh code created by `Mike J. Savage <https://mikejsavage.co.uk
    docs/collision
    docs/double_precision
    docs/misc
-   docs/mobile_web
    docs/navigation
    docs/occlusion_culling
    docs/programming_languages
@@ -119,7 +120,7 @@ Geometry clipmap mesh code created by `Mike J. Savage <https://mikejsavage.co.uk
    docs/system_architecture
    docs/shader_design
    docs/controlmap_format
-   docs/storage_format
+   docs/data_format
    docs/contributing
 
 

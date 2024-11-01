@@ -41,10 +41,6 @@ enum {
 }
 var state: int = HIDDEN
 
-var window: Window
-var _godot_editor_window: Window # The main Godot Editor window
-var _godot_last_state: Window.Mode = Window.MODE_FULLSCREEN
-
 enum {
 	POS_LEFT_UL = 0,
 	POS_LEFT_BL = 1,
@@ -60,16 +56,15 @@ enum {
 var slot: int = POS_RIGHT_BR
 var _initialized: bool = false
 var plugin: EditorPlugin
+var window: Window
+var _godot_last_state: Window.Mode = Window.MODE_FULLSCREEN
 
 
 func initialize(p_plugin: EditorPlugin) -> void:
 	if p_plugin:
 		plugin = p_plugin
-
-	# Get editor window. Structure is root:Window/EditorNode/Base Control
-	_godot_editor_window = plugin.get_editor_interface().get_base_control().get_parent().get_parent()
-	_godot_last_state = _godot_editor_window.mode
 	
+	_godot_last_state = plugin.godot_editor_window.mode
 	placement_opt = $Box/Buttons/PlacementOpt
 	pinned_btn = $Box/Buttons/Pinned
 	floating_btn = $Box/Buttons/Floating
@@ -121,7 +116,7 @@ func _ready() -> void:
 	# Setup styles
 	set("theme_override_styles/panel", get_theme_stylebox("panel", "Panel"))
 	# Avoid saving icon resources in tscn when editing w/ a tool script
-	if plugin.get_editor_interface().get_edited_scene_root() != self:
+	if EditorInterface.get_edited_scene_root() != self:
 		pinned_btn.icon = get_theme_icon("Pin", "EditorIcons")
 		pinned_btn.text = ""
 		floating_btn.icon = get_theme_icon("MakeFloating", "EditorIcons")
@@ -170,9 +165,9 @@ func remove_dock(p_force: bool = false) -> void:
 		var parent: Node = get_parent()
 		if parent:
 			parent.remove_child(self)
-		_godot_editor_window.mouse_entered.disconnect(_on_godot_window_entered)
-		_godot_editor_window.focus_entered.disconnect(_on_godot_focus_entered)
-		_godot_editor_window.focus_exited.disconnect(_on_godot_focus_exited)
+		plugin.godot_editor_window.mouse_entered.disconnect(_on_godot_window_entered)
+		plugin.godot_editor_window.focus_entered.disconnect(_on_godot_focus_entered)
+		plugin.godot_editor_window.focus_exited.disconnect(_on_godot_focus_exited)
 		window.hide()
 		window.queue_free()
 		window = null
@@ -200,8 +195,7 @@ func update_dock() -> void:
 	elif slot == POS_BOTTOM:
 		state = BOTTOM
 		plugin.add_control_to_bottom_panel(self, "Terrain3D")
-		if plugin.ui.visible:
-			plugin.make_bottom_panel_item_visible(self)
+		plugin.make_bottom_panel_item_visible(self)
 
 
 func update_layout() -> void:
@@ -277,7 +271,7 @@ func _on_textures_pressed() -> void:
 	meshes_btn.button_pressed = false
 	texture_list.set_selected_id(texture_list.selected_id)
 	if plugin.is_terrain_valid():
-		plugin.get_editor_interface().edit_node(plugin.terrain)
+		EditorInterface.edit_node(plugin.terrain)
 	save_editor_settings()
 
 
@@ -290,7 +284,7 @@ func _on_meshes_pressed() -> void:
 	textures_btn.button_pressed = false
 	mesh_list.set_selected_id(mesh_list.selected_id)
 	if plugin.is_terrain_valid():
-		plugin.get_editor_interface().edit_node(plugin.terrain)
+		EditorInterface.edit_node(plugin.terrain)
 	update_thumbnails()
 	save_editor_settings()
 
@@ -298,7 +292,7 @@ func _on_meshes_pressed() -> void:
 func _on_tool_changed(p_tool: Terrain3DEditor.Tool, p_operation: Terrain3DEditor.Operation) -> void:
 	if p_tool == Terrain3DEditor.INSTANCER:
 		_on_meshes_pressed()
-	elif p_tool == Terrain3DEditor.TEXTURE:
+	elif p_tool in [ Terrain3DEditor.TEXTURE, Terrain3DEditor.COLOR, Terrain3DEditor.ROUGHNESS ]:
 		_on_textures_pressed()
 
 
@@ -340,10 +334,10 @@ func make_dock_float() -> void:
 	window.focus_exited.connect(save_editor_settings)
 	window.mouse_exited.connect(save_editor_settings)
 	window.size_changed.connect(save_editor_settings)
-	_godot_editor_window.mouse_entered.connect(_on_godot_window_entered)
-	_godot_editor_window.focus_entered.connect(_on_godot_focus_entered)
-	_godot_editor_window.focus_exited.connect(_on_godot_focus_exited)
-	_godot_editor_window.grab_focus()
+	plugin.godot_editor_window.mouse_entered.connect(_on_godot_window_entered)
+	plugin.godot_editor_window.focus_entered.connect(_on_godot_focus_entered)
+	plugin.godot_editor_window.focus_exited.connect(_on_godot_focus_exited)
+	plugin.godot_editor_window.grab_focus()
 	update_assets()
 	save_editor_settings()
 
@@ -379,43 +373,32 @@ func _on_window_input(event: InputEvent) -> void:
 	# Capture CTRL+S when doc focused to save scene
 	if event is InputEventKey and event.keycode == KEY_S and event.pressed and event.is_command_or_control_pressed():
 		save_editor_settings()
-		plugin.get_editor_interface().save_scene()
+		EditorInterface.save_scene()
 
 
 func _on_godot_window_entered() -> void:
 	if is_instance_valid(window) and window.has_focus():
-		_godot_editor_window.grab_focus()
+		plugin.godot_editor_window.grab_focus()
 
 
 func _on_godot_focus_entered() -> void:
 	# If asset dock is windowed, and Godot was minimized, and now is not, restore asset dock window
 	if is_instance_valid(window):
-		if _godot_last_state == Window.MODE_MINIMIZED and _godot_editor_window.mode != Window.MODE_MINIMIZED:
+		if _godot_last_state == Window.MODE_MINIMIZED and plugin.godot_editor_window.mode != Window.MODE_MINIMIZED:
 			window.show()
-			_godot_last_state = _godot_editor_window.mode
-			_godot_editor_window.grab_focus()
+			_godot_last_state = plugin.godot_editor_window.mode
+			plugin.godot_editor_window.grab_focus()
 
 
 func _on_godot_focus_exited() -> void:
-	if is_instance_valid(window) and _godot_editor_window.mode == Window.MODE_MINIMIZED:
+	if is_instance_valid(window) and plugin.godot_editor_window.mode == Window.MODE_MINIMIZED:
 		window.hide()
-		_godot_last_state = _godot_editor_window.mode
+		_godot_last_state = plugin.godot_editor_window.mode
 
 
 ## Manage Editor Settings
 
 func load_editor_settings() -> void:
-	## Deprecated 0.9.2 Remove in 1.0 - Move settings to new config category
-	var value: Variant
-	for es: String in [ "terrain3d/config/dock_slot", "terrain3d/config/dock_tile_size", 
-	"terrain3d/config/dock_floating", "terrain3d/config/dock_always_on_top",
-	"terrain3d/config/dock_window_size", "terrain3d/config/dock_window_position", ]:
-		if plugin.editor_settings.has_setting(es):
-			value = plugin.editor_settings.get_setting(es)
-			plugin.editor_settings.erase(es)
-			plugin.editor_settings.set_setting(es.replace("/config/dock_", "/dock/"), value)
-	## Deprecated End - Load settings as normal
-	
 	floating_btn.button_pressed = plugin.get_setting(ES_DOCK_FLOATING, false)
 	pinned_btn.button_pressed = plugin.get_setting(ES_DOCK_PINNED, true)
 	size_slider.value = plugin.get_setting(ES_DOCK_TILE_SIZE, 83)
@@ -547,7 +530,8 @@ class ListContainer extends Container:
 		plugin.select_terrain()
 
 		# Select Paint tool if clicking a texture
-		if type == Terrain3DAssets.TYPE_TEXTURE and plugin.editor.get_tool() != Terrain3DEditor.TEXTURE:
+		if type == Terrain3DAssets.TYPE_TEXTURE and \
+				not plugin.editor.get_tool() in [ Terrain3DEditor.TEXTURE, Terrain3DEditor.COLOR, Terrain3DEditor.ROUGHNESS ]:
 			var paint_btn: Button = plugin.ui.toolbar.get_node_or_null("PaintBaseTexture")
 			if paint_btn:
 				paint_btn.set_pressed(true)
@@ -565,7 +549,7 @@ class ListContainer extends Container:
 
 	func _on_resource_inspected(p_resource: Resource) -> void:
 		await get_tree().create_timer(.01).timeout
-		plugin.get_editor_interface().edit_resource(p_resource)
+		EditorInterface.edit_resource(p_resource)
 	
 	
 	func _on_resource_changed(p_resource: Resource, p_id: int) -> void:
@@ -595,7 +579,7 @@ class ListContainer extends Container:
 
 			# If removing an entry, clear inspector
 			if not p_resource:
-				plugin.get_editor_interface().inspect_object(null)			
+				EditorInterface.inspect_object(null)			
 				
 		# If null resource, remove last 
 		if not p_resource:

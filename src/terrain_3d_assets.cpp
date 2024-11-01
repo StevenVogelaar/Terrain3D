@@ -166,8 +166,8 @@ void Terrain3DAssets::_update_texture_files() {
 	// Detect image sizes and formats
 
 	LOG(INFO, "Validating texture sizes");
-	Vector2i albedo_size = Vector2i(0, 0);
-	Vector2i normal_size = Vector2i(0, 0);
+	Vector2i albedo_size = V2I_ZERO;
+	Vector2i normal_size = V2I_ZERO;
 
 	Image::Format albedo_format = Image::FORMAT_MAX;
 	Image::Format normal_format = Image::FORMAT_MAX;
@@ -221,19 +221,19 @@ void Terrain3DAssets::_update_texture_files() {
 		}
 	}
 
-	if (normal_size == Vector2i(0, 0)) {
+	if (normal_size == V2I_ZERO) {
 		normal_size = albedo_size;
-	} else if (albedo_size == Vector2i(0, 0)) {
+	} else if (albedo_size == V2I_ZERO) {
 		albedo_size = normal_size;
 	}
-	if (albedo_size == Vector2i(0, 0)) {
+	if (albedo_size == V2I_ZERO) {
 		albedo_size = Vector2i(1024, 1024);
 		normal_size = Vector2i(1024, 1024);
 	}
 
 	// Generate TextureArrays and replace nulls with a empty image
 
-	if (_generated_albedo_textures.is_dirty() && albedo_size != Vector2i(0, 0)) {
+	if (_generated_albedo_textures.is_dirty() && albedo_size != V2I_ZERO) {
 		LOG(INFO, "Regenerating albedo texture array");
 		Array albedo_texture_array;
 		for (int i = 0; i < _texture_list.size(); i++) {
@@ -259,7 +259,7 @@ void Terrain3DAssets::_update_texture_files() {
 		}
 	}
 
-	if (_generated_normal_textures.is_dirty() && normal_size != Vector2i(0, 0)) {
+	if (_generated_normal_textures.is_dirty() && normal_size != V2I_ZERO) {
 		LOG(INFO, "Regenerating normal texture arrays");
 
 		Array normal_texture_array;
@@ -451,7 +451,7 @@ void Terrain3DAssets::create_mesh_thumbnails(const int p_id, const Vector2i &p_s
 			LOG(WARN, i, ": Terrain3DMeshAsset is null");
 			continue;
 		}
-		LOG(DEBUG, i, ": Getting Terrain3DMeshAsset: ", tmesh->get_instance_id());
+		LOG(DEBUG, i, ": Getting Terrain3DMeshAsset: ", String::num_uint64(tmesh->get_instance_id()));
 		Ref<Mesh> mesh = tmesh->get_mesh(0);
 		LOG(DEBUG, i, ": Getting Mesh 0: ", mesh);
 		if (mesh.is_null()) {
@@ -515,6 +515,10 @@ void Terrain3DAssets::update_mesh_list() {
 			LOG(ERROR, "Terrain3DMeshAsset id ", i, " is null, but shouldn't be.");
 			continue;
 		}
+		if (mesh_asset->get_mesh().is_null()) {
+			LOG(DEBUG, "Terrain3DMeshAsset has no mesh, adding a default");
+			mesh_asset->set_generated_type(Terrain3DMeshAsset::TYPE_TEXTURE_CARD);
+		}
 		if (!mesh_asset->is_connected("file_changed", callable_mp(this, &Terrain3DAssets::update_mesh_list))) {
 			LOG(DEBUG, "Connecting file_changed signal to self");
 			mesh_asset->connect("file_changed", callable_mp(this, &Terrain3DAssets::update_mesh_list));
@@ -522,10 +526,6 @@ void Terrain3DAssets::update_mesh_list() {
 		if (!mesh_asset->is_connected("setting_changed", callable_mp(this, &Terrain3DAssets::update_mesh_list))) {
 			LOG(DEBUG, "Connecting setting_changed signal to self");
 			mesh_asset->connect("setting_changed", callable_mp(this, &Terrain3DAssets::update_mesh_list));
-		}
-		if (mesh_asset->get_mesh().is_null()) {
-			LOG(DEBUG, "Terrain3DMeshAsset has no mesh, adding a default");
-			mesh_asset->set_generated_type(Terrain3DMeshAsset::TYPE_TEXTURE_CARD);
 		}
 		if (!mesh_asset->is_connected("file_changed", callable_mp(this, &Terrain3DAssets::_update_thumbnail).bind(mesh_asset))) {
 			LOG(DEBUG, "Connecting file_changed signal to _update_thumbnail");
@@ -535,25 +535,37 @@ void Terrain3DAssets::update_mesh_list() {
 			LOG(DEBUG, "Connecting setting_changed signal to _update_thumbnail");
 			mesh_asset->connect("setting_changed", callable_mp(this, &Terrain3DAssets::_update_thumbnail).bind(mesh_asset));
 		}
-		if (!mesh_asset->is_connected("cast_shadows_changed", callable_mp(_terrain->get_instancer(), &Terrain3DInstancer::set_cast_shadows))) {
-			LOG(DEBUG, "Connecting cast_shadows_changed signal to set_cast_shadows");
-			mesh_asset->connect("cast_shadows_changed", callable_mp(_terrain->get_instancer(), &Terrain3DInstancer::set_cast_shadows));
+		if (!mesh_asset->is_connected("instancer_setting_changed", callable_mp(_terrain->get_instancer(), &Terrain3DInstancer::force_update_mmis))) {
+			LOG(DEBUG, "Connecting instancer_setting_changed signal to _update_mmis");
+			mesh_asset->connect("instancer_setting_changed", callable_mp(_terrain->get_instancer(), &Terrain3DInstancer::force_update_mmis));
 		}
 	}
 	LOG(DEBUG, "Emitting meshes_changed");
 	emit_signal("meshes_changed");
 }
 
-void Terrain3DAssets::save() {
+Error Terrain3DAssets::save(const String &p_path) {
+	if (p_path.is_empty() && get_path().is_empty()) {
+		LOG(ERROR, "No valid path provided");
+		return ERR_FILE_NOT_FOUND;
+	}
+	if (!p_path.is_empty()) {
+		LOG(DEBUG, "Setting file path to ", p_path);
+		take_over_path(p_path);
+	}
+	// Save to external resource file if specified
+	Error err = OK;
 	String path = get_path();
 	if (path.get_extension() == "tres" || path.get_extension() == "res") {
-		LOG(DEBUG, "Attempting to save texture list to external file: " + path);
-		Error err;
+		LOG(DEBUG, "Attempting to save external file: " + path);
 		err = ResourceSaver::get_singleton()->save(this, path, ResourceSaver::FLAG_COMPRESS);
-		ERR_FAIL_COND(err);
-		LOG(DEBUG, "ResourceSaver return error (0 is OK): ", err);
-		LOG(INFO, "Finished saving texture list");
+		if (err == OK) {
+			LOG(INFO, "File saved successfully: ", path);
+		} else {
+			LOG(ERROR, "Cannot save file: ", path, ". Error code: ", ERROR, ". Look up @GlobalScope Error enum in the Godot docs");
+		}
 	}
+	return err;
 }
 
 ///////////////////////////
@@ -566,20 +578,27 @@ void Terrain3DAssets::_bind_methods() {
 	BIND_CONSTANT(MAX_TEXTURES);
 	BIND_CONSTANT(MAX_MESHES);
 
+	ClassDB::bind_method(D_METHOD("set_texture", "id", "texture"), &Terrain3DAssets::set_texture);
+	ClassDB::bind_method(D_METHOD("get_texture", "id"), &Terrain3DAssets::get_texture);
+	ClassDB::bind_method(D_METHOD("set_texture_list", "texture_list"), &Terrain3DAssets::set_texture_list);
+	ClassDB::bind_method(D_METHOD("get_texture_list"), &Terrain3DAssets::get_texture_list);
+	ClassDB::bind_method(D_METHOD("get_texture_count"), &Terrain3DAssets::get_texture_count);
+	ClassDB::bind_method(D_METHOD("get_albedo_array_rid"), &Terrain3DAssets::get_albedo_array_rid);
+	ClassDB::bind_method(D_METHOD("get_normal_array_rid"), &Terrain3DAssets::get_normal_array_rid);
+	ClassDB::bind_method(D_METHOD("get_texture_colors"), &Terrain3DAssets::get_texture_colors);
+	ClassDB::bind_method(D_METHOD("get_texture_uv_scales"), &Terrain3DAssets::get_texture_uv_scales);
+	ClassDB::bind_method(D_METHOD("get_texture_detiles"), &Terrain3DAssets::get_texture_detiles);
+	ClassDB::bind_method(D_METHOD("update_texture_list"), &Terrain3DAssets::update_texture_list);
+
 	ClassDB::bind_method(D_METHOD("set_mesh_asset", "id", "mesh"), &Terrain3DAssets::set_mesh_asset);
 	ClassDB::bind_method(D_METHOD("get_mesh_asset", "id"), &Terrain3DAssets::get_mesh_asset);
 	ClassDB::bind_method(D_METHOD("set_mesh_list", "mesh_list"), &Terrain3DAssets::set_mesh_list);
 	ClassDB::bind_method(D_METHOD("get_mesh_list"), &Terrain3DAssets::get_mesh_list);
 	ClassDB::bind_method(D_METHOD("get_mesh_count"), &Terrain3DAssets::get_mesh_count);
 	ClassDB::bind_method(D_METHOD("create_mesh_thumbnails", "id", "size"), &Terrain3DAssets::create_mesh_thumbnails, DEFVAL(-1), DEFVAL(Vector2i(128, 128)));
+	ClassDB::bind_method(D_METHOD("update_mesh_list"), &Terrain3DAssets::update_mesh_list);
 
-	ClassDB::bind_method(D_METHOD("set_texture", "id", "texture"), &Terrain3DAssets::set_texture);
-	ClassDB::bind_method(D_METHOD("get_texture", "id"), &Terrain3DAssets::get_texture);
-	ClassDB::bind_method(D_METHOD("set_texture_list", "texture_list"), &Terrain3DAssets::set_texture_list);
-	ClassDB::bind_method(D_METHOD("get_texture_list"), &Terrain3DAssets::get_texture_list);
-	ClassDB::bind_method(D_METHOD("get_texture_count"), &Terrain3DAssets::get_texture_count);
-
-	ClassDB::bind_method(D_METHOD("save"), &Terrain3DAssets::save);
+	ClassDB::bind_method(D_METHOD("save", "path"), &Terrain3DAssets::save, DEFVAL(""));
 
 	int ro_flags = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY;
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "mesh_list", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Terrain3DMeshAsset"), ro_flags), "set_mesh_list", "get_mesh_list");
@@ -589,9 +608,7 @@ void Terrain3DAssets::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("textures_changed"));
 }
 
-/////////////////////////////////////
-// DEPRECATED 0.9.2 - Remove 0.9.3+
-/////////////////////////////////////
+// Deprecated 0.9.2 - Remove 1.0
 void Terrain3DTextureList::set_textures(const TypedArray<Terrain3DTexture> &p_textures) {
 	LOG(WARN, "Terrain3DTextureList: Converting Terrain3DTextures to Terrain3DTextureAssets. Save to complete.");
 	for (int i = 0; i < p_textures.size(); i++) {

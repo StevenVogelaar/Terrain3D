@@ -24,7 +24,6 @@ enum SettingType {
 const MultiPicker: Script = preload("res://addons/terrain_3d/src/multi_picker.gd")
 const DEFAULT_BRUSH: String = "circle0.exr"
 const BRUSH_PATH: String = "res://addons/terrain_3d/brushes"
-const PICKER_ICON: String = "res://addons/terrain_3d/icons/picker.svg"
 const ES_TOOL_SETTINGS: String = "terrain3d/tool_settings/"
 
 # Add settings flags
@@ -33,13 +32,14 @@ const ALLOW_LARGER: int = 0x1
 const ALLOW_SMALLER: int = 0x2
 const ALLOW_OUT_OF_BOUNDS: int = 0x3 # LARGER|SMALLER
 const NO_LABEL: int = 0x4
-const ADD_SEPARATOR: int = 0x8
-const ADD_SPACER: int = 0x10
+const ADD_SEPARATOR: int = 0x8 # Add a vertical line before this entry
+const ADD_SPACER: int = 0x10 # Add a space before this entry
+const NO_SAVE: int = 0x20 # Don't save this in EditorSettings
 
 var plugin: EditorPlugin # Actually Terrain3DEditorPlugin, but Godot still has CRC errors
 var brush_preview_material: ShaderMaterial
 var select_brush_button: Button
-var main_list: HBoxContainer
+var main_list: HFlowContainer
 var advanced_list: VBoxContainer
 var height_list: VBoxContainer
 var scale_list: VBoxContainer
@@ -49,25 +49,24 @@ var settings: Dictionary = {}
 
 
 func _ready() -> void:
-	main_list = HBoxContainer.new()
+	# Remove old editor settings
+	for setting in ["lift_floor", "flatten_peaks", "lift_flatten", "automatic_regions"]:
+		plugin.erase_setting(ES_TOOL_SETTINGS + setting)
+
+	# Setup buttons	
+	main_list = HFlowContainer.new()
 	add_child(main_list, true)
 	
-	## Common Settings
 	add_brushes(main_list)
 
 	add_setting({ "name":"instructions", "label":"Click the terrain to add a region. CTRL+Click to remove. Or select another tool on the left.",
-		"type":SettingType.LABEL, "list":main_list, "flags":NO_LABEL })
+		"type":SettingType.LABEL, "list":main_list, "flags":NO_LABEL|NO_SAVE })
 
 	add_setting({ "name":"size", "type":SettingType.SLIDER, "list":main_list, "default":20, "unit":"m",
-								"range":Vector3(2, 200, 1), "flags":ALLOW_LARGER|ADD_SPACER })
+								"range":Vector3(0.1, 200, 1), "flags":ALLOW_LARGER|ADD_SPACER })
 		
 	add_setting({ "name":"strength", "type":SettingType.SLIDER, "list":main_list, "default":33, 
 								"unit":"%", "range":Vector3(1, 100, 1), "flags":ALLOW_LARGER })
-
-	add_setting({ "name":"lift_floor", "type":SettingType.CHECKBOX, "list":main_list,
-								"default":false })
-	add_setting({ "name":"flatten_peaks", "type":SettingType.CHECKBOX, "list":main_list,
-								"default":false })
 
 	add_setting({ "name":"height", "type":SettingType.SLIDER, "list":main_list, "default":20, 
 								"unit":"m", "range":Vector3(-500, 500, 0.1), "flags":ALLOW_OUT_OF_BOUNDS })
@@ -90,8 +89,15 @@ func _ready() -> void:
 								"default":false })
 
 	add_setting({ "name":"enable_texture", "label":"Texture", "type":SettingType.CHECKBOX, 
-								"list":main_list, "default":true })
+								"list":main_list, "default":true, "flags":ADD_SEPARATOR })
 
+	add_setting({ "name":"margin", "type":SettingType.SLIDER, "list":main_list, "default":0, 
+								"unit":"", "range":Vector3(-50, 50, 1), "flags":ALLOW_OUT_OF_BOUNDS })
+
+	# Slope painting filter
+	add_setting({ "name":"slope", "type":SettingType.DOUBLE_SLIDER, "list":main_list, "default":Vector2(0, 90), 
+								"unit":"°", "range":Vector3(0, 90, 1), "flags":ADD_SEPARATOR })
+	
 	add_setting({ "name":"enable_angle", "label":"Angle", "type":SettingType.CHECKBOX, 
 								"list":main_list, "default":true, "flags":ADD_SEPARATOR })
 	add_setting({ "name":"angle", "type":SettingType.SLIDER, "list":main_list, "default":0,
@@ -101,18 +107,16 @@ func _ready() -> void:
 	add_setting({ "name":"dynamic_angle", "label":"Dynamic", "type":SettingType.CHECKBOX, 
 								"list":main_list, "default":false, "flags":ADD_SPACER })
 	
-	add_setting({ "name":"enable_scale", "label":"Scale ±", "type":SettingType.CHECKBOX, 
+	add_setting({ "name":"enable_scale", "label":"Scale", "type":SettingType.CHECKBOX, 
 								"list":main_list, "default":true, "flags":ADD_SEPARATOR })
 	add_setting({ "name":"scale", "label":"±", "type":SettingType.SLIDER, "list":main_list, "default":0,
 								"unit":"%", "range":Vector3(-60, 80, 20), "flags":NO_LABEL })
 	add_setting({ "name":"scale_picker", "type":SettingType.PICKER, "list":main_list, 
 								"default":Terrain3DEditor.SCALE, "flags":NO_LABEL })
 
-	## Slope
-	add_setting({ "name":"slope", "type":SettingType.DOUBLE_SLIDER, "list":main_list, 
-								"default":0, "unit":"°", "range":Vector3(0, 180, 1) })
+	## Slope sculpting brush
 	add_setting({ "name":"gradient_points", "type":SettingType.MULTI_PICKER, "label":"Points", 
-								"list":main_list, "default":Terrain3DEditor.HEIGHT, "flags":ADD_SEPARATOR })
+								"list":main_list, "default":Terrain3DEditor.SCULPT, "flags":ADD_SEPARATOR })
 	add_setting({ "name":"drawable", "type":SettingType.CHECKBOX, "list":main_list, "default":false, 
 								"flags":ADD_SEPARATOR })
 	settings["drawable"].toggled.connect(_on_drawable_toggled)
@@ -136,9 +140,9 @@ func _ready() -> void:
 								"default":0, "unit":"°", "range":Vector3(0, 360, 1) })
 	add_setting({ "name":"random_spin", "type":SettingType.SLIDER, "list":rotation_list, "default":360, 
 								"unit":"°", "range":Vector3(0, 360, 1) })
-	add_setting({ "name":"fixed_angle", "label":"Fixed Angle (From Y)", "type":SettingType.SLIDER, "list":rotation_list, 
+	add_setting({ "name":"fixed_tilt", "label":"Fixed Tilt", "type":SettingType.SLIDER, "list":rotation_list, 
 								"default":0, "unit":"°", "range":Vector3(-85, 85, 1), "flags":ALLOW_OUT_OF_BOUNDS })
-	add_setting({ "name":"random_angle", "label":"Random Angle ±", "type":SettingType.SLIDER, "list":rotation_list, 
+	add_setting({ "name":"random_tilt", "label":"Random Tilt ±", "type":SettingType.SLIDER, "list":rotation_list, 
 								"default":10, "unit":"°", "range":Vector3(0, 85, 1), "flags":ALLOW_OUT_OF_BOUNDS })
 	add_setting({ "name":"align_to_normal", "type":SettingType.CHECKBOX, "list":rotation_list, "default":false })
 	
@@ -160,9 +164,9 @@ func _ready() -> void:
 	main_list.add_child(spacer, true)
 
 	## Advanced Settings Menu
-	advanced_list = create_submenu(main_list, "Advanced", Layout.VERTICAL)
-	add_setting({ "name":"automatic_regions", "type":SettingType.CHECKBOX, "list":advanced_list, 
-								"default":true })
+	advanced_list = create_submenu(main_list, "", Layout.VERTICAL, false)
+	add_setting({ "name":"auto_regions", "label":"Add regions while sculpting", "type":SettingType.CHECKBOX, 
+								"list":advanced_list, "default":true })
 	add_setting({ "name":"align_to_view", "type":SettingType.CHECKBOX, "list":advanced_list, 
 								"default":true })
 	add_setting({ "name":"show_cursor_while_painting", "type":SettingType.CHECKBOX, "list":advanced_list, 
@@ -174,23 +178,44 @@ func _ready() -> void:
 								"unit":"%", "range":Vector3(0, 100, 1) })
 
 
-func create_submenu(p_parent: Control, p_button_name: String, p_layout: Layout) -> Container:
+func create_submenu(p_parent: Control, p_button_name: String, p_layout: Layout, p_hover_pop: bool = true) -> Container:
 	var menu_button: Button = Button.new()
-	menu_button.set_text(p_button_name)
+	if p_button_name.is_empty():
+		menu_button.icon = get_theme_icon("GuiTabMenuHl", "EditorIcons")
+	else:
+		menu_button.set_text(p_button_name)
 	menu_button.set_toggle_mode(true)
 	menu_button.set_v_size_flags(SIZE_SHRINK_CENTER)
 	menu_button.toggled.connect(_on_show_submenu.bind(menu_button))
 	
 	var submenu: PopupPanel = PopupPanel.new()
-	submenu.popup_hide.connect(menu_button.set_pressed_no_signal.bind(false))
+	submenu.popup_hide.connect(menu_button.set_pressed.bind(false))
 	var panel_style: StyleBox = get_theme_stylebox("panel", "PopupMenu").duplicate()
 	panel_style.set_content_margin_all(10)
 	submenu.set("theme_override_styles/panel", panel_style)
 	submenu.add_to_group("terrain3d_submenus")
 
 	# Pop up menu on hover, hide on exit
-	menu_button.mouse_entered.connect(_on_show_submenu.bind(true, menu_button))
-	submenu.mouse_exited.connect(_on_show_submenu.bind(false, menu_button))
+	if p_hover_pop:
+		menu_button.mouse_entered.connect(_on_show_submenu.bind(true, menu_button))
+		
+	submenu.mouse_entered.connect(func(): submenu.set_meta("mouse_entered", true))
+	
+	submenu.mouse_exited.connect(func():
+		# On mouse_exit, hide popup unless LineEdit focused
+		var focused_element: Control = submenu.gui_get_focus_owner()
+		if not focused_element is LineEdit:
+			_on_show_submenu(false, menu_button)
+			submenu.set_meta("mouse_entered", false)
+			return
+			
+		focused_element.focus_exited.connect(func():
+			# Close submenu once lineedit loses focus
+			if not submenu.get_meta("mouse_entered"):
+				_on_show_submenu(false, menu_button)
+				submenu.set_meta("mouse_entered", false)
+		)
+	)
 	
 	var sublist: Container
 	match(p_layout):
@@ -248,6 +273,8 @@ func add_brushes(p_parent: Control) -> void:
 			if !dir.current_is_dir() and file_name.ends_with(".exr"):
 				var img: Image = Image.load_from_file(BRUSH_PATH + "/" + file_name)
 				img = Terrain3DUtil.black_to_alpha(img)
+				if img.get_width() < 1024 and img.get_height() < 1024:
+					img.resize(1024, 1024, Image.INTERPOLATE_CUBIC)
 				var tex: ImageTexture = ImageTexture.create_from_image(img)
 
 				var btn: Button = Button.new()
@@ -287,10 +314,11 @@ func add_brushes(p_parent: Control) -> void:
 
 	select_brush_button = brush_list.get_parent().get_parent()
 	# Optionally erase the main brush button text and replace it with the texture
-#	select_brush_button.set_button_icon(default_brush_btn.get_button_icon())
-#	select_brush_button.set_custom_minimum_size(Vector2.ONE * 36)
-#	select_brush_button.set_icon_alignment(HORIZONTAL_ALIGNMENT_CENTER)
-#	select_brush_button.set_expand_icon(true)
+	select_brush_button.set_text("")
+	select_brush_button.set_button_icon(default_brush_btn.get_button_icon())
+	select_brush_button.set_custom_minimum_size(Vector2.ONE * 36)
+	select_brush_button.set_icon_alignment(HORIZONTAL_ALIGNMENT_CENTER)
+	select_brush_button.set_expand_icon(true)
 
 
 func _on_brush_hover(p_hovering: bool, p_button: Button) -> void:
@@ -324,13 +352,12 @@ func _on_picked(p_type: Terrain3DEditor.Tool, p_color: Color, p_global_position:
 
 
 func _on_point_pick(p_type: Terrain3DEditor.Tool, p_name: String) -> void:
-	assert(p_type == Terrain3DEditor.HEIGHT)
+	assert(p_type == Terrain3DEditor.SCULPT)
 	emit_signal("picking", p_type, _on_point_picked.bind(p_name))
 
 
 func _on_point_picked(p_type: Terrain3DEditor.Tool, p_color: Color, p_global_position: Vector3, p_name: String) -> void:
-	assert(p_type == Terrain3DEditor.HEIGHT)
-	
+	assert(p_type == Terrain3DEditor.SCULPT)
 	var point: Vector3 = p_global_position
 	point.y = p_color.r
 	settings[p_name].add_point(point)
@@ -367,11 +394,14 @@ func add_setting(p_args: Dictionary) -> void:
 
 		SettingType.CHECKBOX:
 			var checkbox := CheckBox.new()
-			checkbox.set_pressed_no_signal(plugin.get_setting(ES_TOOL_SETTINGS + p_name, p_default))
-			checkbox.toggled.connect( (
-				func(value, path):
-					plugin.set_setting(path, value)
-			).bind(ES_TOOL_SETTINGS + p_name) )
+			if !(p_flags & NO_SAVE):
+				checkbox.set_pressed_no_signal(plugin.get_setting(ES_TOOL_SETTINGS + p_name, p_default))
+				checkbox.toggled.connect( (
+					func(value, path):
+						plugin.set_setting(path, value)
+				).bind(ES_TOOL_SETTINGS + p_name) )
+			else:
+				checkbox.set_pressed_no_signal(p_default)				
 			checkbox.pressed.connect(_on_setting_changed)
 			pending_children.push_back(checkbox)
 			control = checkbox
@@ -381,11 +411,14 @@ func add_setting(p_args: Dictionary) -> void:
 			picker.set_custom_minimum_size(Vector2(100, 25))
 			picker.edit_alpha = false
 			picker.get_picker().set_color_mode(ColorPicker.MODE_HSV)
-			picker.set_pick_color(plugin.get_setting(ES_TOOL_SETTINGS + p_name, p_default))
-			picker.color_changed.connect( (
-				func(value, path):
-					plugin.set_setting(path, value)
-			).bind(ES_TOOL_SETTINGS + p_name) )
+			if !(p_flags & NO_SAVE):
+				picker.set_pick_color(plugin.get_setting(ES_TOOL_SETTINGS + p_name, p_default))
+				picker.color_changed.connect( (
+					func(value, path):
+						plugin.set_setting(path, value)
+				).bind(ES_TOOL_SETTINGS + p_name) )
+			else:
+				picker.set_pick_color(p_default)
 			picker.color_changed.connect(_on_setting_changed)
 			pending_children.push_back(picker)
 			control = picker
@@ -393,7 +426,7 @@ func add_setting(p_args: Dictionary) -> void:
 		SettingType.PICKER:
 			var button := Button.new()
 			button.set_v_size_flags(SIZE_SHRINK_CENTER)
-			button.icon = load(PICKER_ICON)
+			button.icon = get_theme_icon("ColorPick", "EditorIcons")
 			button.tooltip_text = "Pick value from the Terrain"
 			button.pressed.connect(_on_pick.bind(p_default))
 			pending_children.push_back(button)
@@ -428,7 +461,7 @@ func add_setting(p_args: Dictionary) -> void:
 				spin_slider.set_step(p_step)
 				spin_slider.set_suffix(p_suffix)
 				spin_slider.set_v_size_flags(SIZE_SHRINK_CENTER)
-				spin_slider.set_custom_minimum_size(Vector2(75, 0))
+				spin_slider.set_custom_minimum_size(Vector2(65, 0))
 
 				# Create horizontal slider linked to the above box
 				slider = HSlider.new()
@@ -437,33 +470,38 @@ func add_setting(p_args: Dictionary) -> void:
 					slider.set_allow_greater(true)
 				if p_flags & ALLOW_SMALLER:
 					slider.set_allow_lesser(true)
+				
 				pending_children.push_back(slider)
 				pending_children.push_back(spin_slider)
 				control = spin_slider
 						
 			else: # DOUBLE_SLIDER
 				var label := Label.new()
-				label.set_custom_minimum_size(Vector2(75, 0))
+				label.set_custom_minimum_size(Vector2(60, 0))
+				label.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_RIGHT)
 				slider = DoubleSlider.new()
 				slider.label = label
 				slider.suffix = p_suffix
-				slider.setting_changed.connect(_on_setting_changed)
+				slider.value_changed.connect(_on_setting_changed)
 				pending_children.push_back(slider)
 				pending_children.push_back(label)
 				control = slider
 			
-			slider.set_max(p_maximum)
 			slider.set_min(p_minimum)
+			slider.set_max(p_maximum)
 			slider.set_step(p_step)
 			slider.set_value(p_default)
 			slider.set_v_size_flags(SIZE_SHRINK_CENTER)
-			slider.set_custom_minimum_size(Vector2(60, 10))
+			slider.set_custom_minimum_size(Vector2(50, 10))
 
-			slider.set_value(plugin.get_setting(ES_TOOL_SETTINGS + p_name, p_default))
-			slider.value_changed.connect( (
-				func(value, path):
-					plugin.set_setting(path, value)
-			).bind(ES_TOOL_SETTINGS + p_name) )
+			if !(p_flags & NO_SAVE):
+				slider.set_value(plugin.get_setting(ES_TOOL_SETTINGS + p_name, p_default))
+				slider.value_changed.connect( (
+					func(value, path):
+						plugin.set_setting(path, value)
+				).bind(ES_TOOL_SETTINGS + p_name) )
+			else:
+				slider.set_value(p_default)
 
 	control.name = p_name.to_pascal_case()
 	settings[p_name] = control
@@ -525,8 +563,8 @@ func get_setting(p_setting: String) -> Variant:
 		var width: float = clamp( (1 + count_digits(value)) * 19., 50, 80) * clamp(EditorInterface.get_editor_scale(), .9, 2)
 		object.set_custom_minimum_size(Vector2(width, 0))
 	elif object is DoubleSlider:
-		value = Vector2(object.get_min_value(), object.get_max_value())
-	elif object is ButtonGroup:
+		value = object.get_value()
+	elif object is ButtonGroup: # "brush"
 		var img: Image = object.get_pressed_button().get_meta("image")
 		var tex: Texture2D = object.get_pressed_button().get_button_icon()
 		value = [ img, tex ]
@@ -543,11 +581,10 @@ func get_setting(p_setting: String) -> Variant:
 
 func set_setting(p_setting: String, p_value: Variant) -> void:
 	var object: Object = settings.get(p_setting)
-	if object is Range:
+	if object is DoubleSlider: # Expects p_value is Vector2
 		object.set_value(p_value)
-	elif object is DoubleSlider: # Expects p_value is Vector2
-		object.set_min_value(p_value.x)
-		object.set_max_value(p_value.y)
+	elif object is Range:
+		object.set_value(p_value)
 	elif object is ButtonGroup: # Expects p_value is Array [ "button name", boolean ]
 		if p_value is Array and p_value.size() == 2:
 			for button in object.get_buttons():
@@ -583,7 +620,7 @@ func _on_setting_changed(p_data: Variant = null) -> void:
 	if p_data is Button and p_data.get_parent().get_parent() is PopupPanel:
 		if p_data.get_parent().name == "BrushList":
 			# Optionally Set selected brush texture in main brush button
-			# p_data.get_parent().get_parent().get_parent().set_button_icon(p_data.get_button_icon())
+			p_data.get_parent().get_parent().get_parent().set_button_icon(p_data.get_button_icon())
 			# Hide popup
 			p_data.get_parent().get_parent().set_visible(false)
 			# Hide label
@@ -636,75 +673,3 @@ func count_digits(p_value: float) -> int:
 		count += 1
 	return count
 	
-
-#### Sub Class DoubleSlider
-
-class DoubleSlider extends Range:
-	signal setting_changed(Vector2)
-	var label: Label
-	var suffix: String
-	var grabbed: bool = false
-	var _max_value: float
-	# TODO Needs to clamp min and max values. Currently allows max slider to go negative.
-	
-	func _gui_input(p_event: InputEvent) -> void:
-		if p_event is InputEventMouseButton:
-			if p_event.get_button_index() == MOUSE_BUTTON_LEFT:
-				grabbed = p_event.is_pressed()
-				set_min_max(p_event.get_position().x)
-				
-		if p_event is InputEventMouseMotion:
-			if grabbed:
-				set_min_max(p_event.get_position().x)
-		
-		
-	func _notification(p_what: int) -> void:
-		if p_what == NOTIFICATION_RESIZED:
-			pass
-		if p_what == NOTIFICATION_DRAW:
-			var bg: StyleBox = get_theme_stylebox("slider", "HSlider")
-			var bg_height: float = bg.get_minimum_size().y
-			draw_style_box(bg, Rect2(Vector2(0, (size.y - bg_height) / 2), Vector2(size.x, bg_height)))
-			
-			var grabber: Texture2D = get_theme_icon("grabber", "HSlider")
-			var area: StyleBox = get_theme_stylebox("grabber_area", "HSlider")
-			var h: float = size.y / 2 - grabber.get_size().y / 2
-			
-			var minpos: Vector2 = Vector2((min_value / _max_value) * size.x - grabber.get_size().x / 2, h)
-			var maxpos: Vector2 = Vector2((max_value / _max_value) * size.x - grabber.get_size().x / 2, h)
-			
-			draw_style_box(area, Rect2(Vector2(minpos.x + grabber.get_size().x / 2, (size.y - bg_height) / 2), Vector2(maxpos.x - minpos.x, bg_height)))
-			
-			draw_texture(grabber, minpos)
-			draw_texture(grabber, maxpos)
-			
-			
-	func set_max(p_value: float) -> void:
-		max_value = p_value
-		if _max_value == 0:
-			_max_value = max_value
-		update_label()
-		
-		
-	func set_min_max(p_xpos: float) -> void:
-		var mid_value_normalized: float = ((max_value + min_value) / 2.0) / _max_value
-		var mid_value: float = size.x * mid_value_normalized
-		var min_active: bool = p_xpos < mid_value
-		var xpos_ranged: float = snappedf((p_xpos / size.x) * _max_value, step)
-		
-		if min_active:
-			min_value = xpos_ranged
-		else:
-			max_value = xpos_ranged
-		
-		min_value = clamp(min_value, 0, max_value - 10)
-		max_value = clamp(max_value, min_value + 10, _max_value)
-		
-		update_label()
-		emit_signal("setting_changed", Vector2(min_value, max_value))
-		queue_redraw()
-		
-		
-	func update_label() -> void:
-		if label:
-			label.set_text(str(min_value) + suffix + "/" + str(max_value) + suffix)

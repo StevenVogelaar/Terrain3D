@@ -27,13 +27,13 @@ render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlic
 
 uniform float _region_size = 1024.0;
 uniform float _region_texel_size = 0.0009765625; // = 1/1024
-uniform float _mesh_vertex_spacing = 1.0;
-uniform float _mesh_vertex_density = 1.0; // = 1/_mesh_vertex_spacing
-uniform int _region_map_size = 16;
-uniform int _region_map[256];
-uniform vec2 _region_offsets[256];
-uniform sampler2DArray _height_maps : repeat_disable;
-uniform usampler2DArray _control_maps : repeat_disable;
+uniform float _vertex_spacing = 1.0;
+uniform float _vertex_density = 1.0; // = 1/_vertex_spacing
+uniform int _region_map_size = 32;
+uniform int _region_map[1024];
+uniform vec2 _region_locations[1024];
+uniform highp sampler2DArray _height_maps : repeat_disable;
+uniform highp usampler2DArray _control_maps : repeat_disable;
 //INSERT: TEXTURE_SAMPLERS_NEAREST
 //INSERT: TEXTURE_SAMPLERS_LINEAR
 uniform float _texture_uv_scale_array[32];
@@ -86,26 +86,22 @@ varying float v_region_border_mask;
 // Takes in UV world space coordinates, returns ivec3 with:
 // XY: (0 to _region_size) coordinates within a region
 // Z: layer index used for texturearrays, -1 if not in a region
-ivec3 get_region_uv(vec2 uv) {
-	uv *= _region_texel_size;
-	ivec2 pos = ivec2(floor(uv)) + (_region_map_size / 2);
-	int bounds = int(pos.x >= 0 && pos.x < _region_map_size && pos.y >= 0 && pos.y < _region_map_size);
+ivec3 get_region_uv(const vec2 uv) {
+	ivec2 pos = ivec2(floor(uv * _region_texel_size)) + (_region_map_size / 2);
+	int bounds = int(uint(pos.x | pos.y) < uint(_region_map_size));
 	int layer_index = _region_map[ pos.y * _region_map_size + pos.x ] * bounds - 1;
-	return ivec3(ivec2((uv - _region_offsets[layer_index]) * _region_size), layer_index);
+	return ivec3(ivec2(mod(uv,_region_size)), layer_index);
 }
 
 // Takes in UV2 region space coordinates, returns vec3 with:
 // XY: (0 to 1) coordinates within a region
 // Z: layer index used for texturearrays, -1 if not in a region
-vec3 get_region_uv2(vec2 uv) {
-	// Vertex function added half a texel to UV2, to center the UV's.  vertex(), fragment() and get_height()
-	// call this with reclaimed versions of UV2, so to keep the last row/column within the correct
-	// window, take back the half pixel before the floor(). 
-	ivec2 pos = ivec2(floor(uv - vec2(_region_texel_size * 0.5))) + (_region_map_size / 2);
-	int bounds = int(pos.x >= 0 && pos.x < _region_map_size && pos.y >= 0 && pos.y < _region_map_size);
+vec3 get_region_uv2(const vec2 uv2) {
+	// Remove Texel Offset to ensure correct region index.
+	ivec2 pos = ivec2(floor(uv2 - vec2(_region_texel_size * 0.5))) + (_region_map_size / 2);
+	int bounds = int(uint(pos.x | pos.y) < uint(_region_map_size));
 	int layer_index = _region_map[ pos.y * _region_map_size + pos.x ] * bounds - 1;
-	// The return value is still texel-centered.
-	return vec3(uv - _region_offsets[layer_index], float(layer_index));
+	return vec3(uv2 - _region_locations[layer_index], float(layer_index));
 }
 
 //INSERT: WORLD_NOISE1
@@ -131,10 +127,10 @@ void vertex() {
 	v_vertex_xz_dist = length(v_vertex.xz - v_camera_pos.xz);
 
 	// UV coordinates in world space. Values are 0 to _region_size within regions
-	UV = round(v_vertex.xz * _mesh_vertex_density);
+	UV = round(v_vertex.xz * _vertex_density);
 
 	// UV coordinates in region space + texel offset. Values are 0 to 1 within regions
-	UV2 = (UV + vec2(0.5)) * _region_texel_size;
+	UV2 = fma(UV, vec2(_region_texel_size), vec2(0.5 * _region_texel_size));
 
 	// Discard vertices for Holes. 1 lookup
 	v_region = get_region_uv(UV);
@@ -143,7 +139,7 @@ void vertex() {
 
 	// Show holes to all cameras except mouse camera (on exactly 1 layer)
 	if ( !(CAMERA_VISIBLE_LAYERS == _mouse_layer) && 
-			(hole || (_background_mode == 0u && v_region.z < 0)) ) {
+			(hole || (_background_mode == 0u && (get_region_uv(UV - _region_texel_size) & v_region).z < 0))) {
 		VERTEX.x = 0. / 0.;
 	} else {		
 		// Set final vertex height & calculate vertex normals. 3 lookups.
@@ -151,7 +147,7 @@ void vertex() {
 		v_vertex.y = VERTEX.y;
 		v_normal = vec3(
 			v_vertex.y - get_height(UV2 + vec2(_region_texel_size, 0)),
-			_mesh_vertex_spacing,
+			_vertex_spacing,
 			v_vertex.y - get_height(UV2 + vec2(0, _region_texel_size))
 		);
 		// Due to a bug caused by the GPUs linear interpolation across edges of region maps,
@@ -160,7 +156,7 @@ void vertex() {
 	}
 		
 	// Transform UVs to local to avoid poor precision during varying interpolation.
-	v_uv_offset = MODEL_MATRIX[3].xz * _mesh_vertex_density;
+	v_uv_offset = MODEL_MATRIX[3].xz * _vertex_density;
 	UV -= v_uv_offset;
 	v_uv2_offset = v_uv_offset * _region_texel_size;
 	UV2 -= v_uv2_offset;
@@ -184,28 +180,26 @@ vec3 get_normal(vec2 uv, out vec3 tangent, out vec3 binormal) {
 	float u, v, height;
 	vec3 normal;
 	// Use vertex normals within radius of vertex_normals_distance, and along region borders.
-	if (v_region_border_mask > 0.5 || v_vertex_xz_dist < vertex_normals_distance) {
+	if ((v_region_border_mask > 0.5 || v_vertex_xz_dist < vertex_normals_distance) && v_region.z >= 0) {
 		normal = normalize(v_normal);
 	} else {
 		height = get_height(uv);
 		u = height - get_height(uv + vec2(_region_texel_size, 0));
 		v = height - get_height(uv + vec2(0, _region_texel_size));
-		normal = normalize(vec3(u, _mesh_vertex_spacing, v));
+		normal = normalize(vec3(u, _vertex_spacing, v));
 	}
-	tangent = cross(normal, vec3(0, 0, 1));
-	binormal = cross(normal, tangent);
+	tangent = normalize(cross(normal, vec3(0, 0, 1)));
+	binormal = normalize(cross(normal, tangent));
 	return normal;
 }
 
 vec3 unpack_normal(vec4 rgba) {
-	vec3 n = rgba.xzy * 2.0 - vec3(1.0);
-	n.z *= -1.0;
+	vec3 n = fma(rgba.xzy, vec3(2.0, 2.0, -2.0), vec3(-1.0, -1.0, 1.0));
 	return n;
 }
 
 vec4 pack_normal(vec3 n, float a) {
-	n.z *= -1.0;
-	return vec4((n.xzy + vec3(1.0)) * 0.5, a);
+	return vec4(fma(n.xzy, vec3(0.5, -0.5, 0.5), vec3(0.5)), a);
 }
 
 float random(in vec2 xy) {
@@ -213,7 +207,7 @@ float random(in vec2 xy) {
 }
 
 vec2 rotate(vec2 v, float cosa, float sina) {
-	return vec2(cosa * v.x - sina * v.y, sina * v.x + cosa * v.y);
+	return vec2(fma(cosa, v.x, - sina * v.y), fma(sina, v.x, cosa * v.y));
 }
 
 // Moves a point around a pivot point.
@@ -239,7 +233,7 @@ vec4 height_blend(vec4 a_value, float a_height, vec4 b_value, float b_height, fl
 vec2 detiling(vec2 uv, vec2 uv_center, int mat_id, inout float normal_rotation){
 	if (_texture_detile_array[mat_id] >= 0.001){
 		uv_center = floor(uv_center) + 0.5;
-		float detile = (random(uv_center) - 0.5) * 2.0 * TAU * _texture_detile_array[mat_id]; // -180deg to 180deg
+		float detile = fma(random(uv_center), 2.0, -1.0) * TAU * _texture_detile_array[mat_id]; // -180deg to 180deg
 		uv = rotate_around(uv, uv_center, detile);
 		// Accumulate total rotation for normal rotation
 		normal_rotation += detile;
@@ -248,9 +242,9 @@ vec2 detiling(vec2 uv, vec2 uv_center, int mat_id, inout float normal_rotation){
 }
 
 vec2 rotate_normal(vec2 normal, float angle) {
-	angle += PI * 0.5;
+	angle = fma(PI, 0.5, angle);
 	float new_y = dot(vec2(cos(angle), sin(angle)), normal);
-	angle -= PI * 0.5;
+	angle = fma(PI, -0.5, angle);
 	float new_x = dot(vec2(cos(angle) ,sin(angle)) ,normal);
 	return vec2(new_x, new_y);
 }
@@ -265,7 +259,7 @@ void get_material(vec2 base_uv, uint control, ivec3 iuv_center, vec3 normal, out
 //INSERT: TEXTURE_ID	
 	// Control map scale & rotation, apply to both base and 
 	// uv_center. Translate uv center to the current region.
-	uv_center += _region_offsets[region] * _region_size;
+	uv_center += _region_locations[region] * _region_size;
 	// Define base scale from control map value as array index. 0.5 as baseline.
 	float[8] scale_array = { 0.5, 0.4, 0.3, 0.2, 0.1, 0.8, 0.7, 0.6};
 	float control_scale = scale_array[(control >>7u & 0x7u)];
@@ -330,7 +324,7 @@ void get_material(vec2 base_uv, uint control, ivec3 iuv_center, vec3 normal, out
 float blend_weights(float weight, float detail) {
 	weight = smoothstep(0.0, 1.0, weight);
 	weight = sqrt(weight * 0.5);
-	float result = max(0.1 * weight, 10.0 * (weight + detail) + 1.0f - (detail + 10.0));
+	float result = max(0.1 * weight, fma(10.0, (weight + detail), 1.0f - (detail + 10.0)));
 	return result;
 }
 

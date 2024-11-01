@@ -19,11 +19,19 @@ using namespace godot;
 #define COLOR_CONTROL Color(as_float(enc_auto(true)), 0.f, 0.f, 1.0f)
 #define COLOR_GRASS Color(as_float(enc_auto(true)), 0.f, 0.f, 1.0f)
 
-// For consistency between msvc, gcc, clang
-
-#ifndef __FLT_MAX__
-#define __FLT_MAX__ FLT_MAX
+#ifndef FLT_MAX
+// For consistency between MSVC, gcc, clang
+#define FLT_MAX __FLT_MAX__
 #endif
+
+#define V2(x) Vector2(x, x)
+#define V2_ZERO Vector2(0.f, 0.f)
+#define V2I_ZERO Vector2i(0, 0)
+#define V2_MAX Vector2(FLT_MAX, FLT_MAX)
+#define V2I_MAX Vector2i(INT32_MAX, INT32_MAX)
+#define V3(x) Vector3(x, x, x)
+#define V3_ZERO Vector3(0.f, 0.f, 0.f)
+#define V3_MAX Vector3(FLT_MAX, FLT_MAX, FLT_MAX)
 
 // Set class name for logger.h
 
@@ -69,15 +77,34 @@ using namespace godot;
 		return ret;                                                    \
 	}
 
-#define IS_STORAGE_INIT(ret)                                        \
-	if (_terrain == nullptr || _terrain->get_storage().is_null()) { \
-		return ret;                                                 \
+#define IS_DATA_INIT(ret)                                         \
+	if (_terrain == nullptr || _terrain->get_data() == nullptr) { \
+		return ret;                                               \
 	}
 
-#define IS_STORAGE_INIT_MESG(mesg, ret)                             \
-	if (_terrain == nullptr || _terrain->get_storage().is_null()) { \
-		LOG(ERROR, mesg);                                           \
-		return ret;                                                 \
+#define IS_DATA_INIT_MESG(mesg, ret)                              \
+	if (_terrain == nullptr || _terrain->get_data() == nullptr) { \
+		LOG(ERROR, mesg);                                         \
+		return ret;                                               \
 	}
+
+// Global Types
+
+struct Vector2iHash {
+	std::size_t operator()(const Vector2i &v) const {
+		std::size_t h1 = std::hash<int>()(v.x);
+		std::size_t h2 = std::hash<int>()(v.y);
+		return h1 ^ (h2 << 1);
+	}
+};
+
+struct Vector3Hash {
+	std::size_t operator()(const Vector3 &v) const {
+		std::size_t h1 = std::hash<float>()(v.x);
+		std::size_t h2 = std::hash<float>()(v.y);
+		std::size_t h3 = std::hash<float>()(v.z);
+		return h1 ^ (h2 << 1) ^ (h3 << 2);
+	}
+};
 
 #endif // CONSTANTS_CLASS_H

@@ -5,6 +5,7 @@
 
 #include <godot_cpp/classes/multi_mesh.hpp>
 #include <godot_cpp/classes/multi_mesh_instance3d.hpp>
+#include <unordered_map>
 
 #include "constants.h"
 
@@ -18,62 +19,78 @@ class Terrain3DInstancer : public Object {
 	CLASS_NAME();
 	friend Terrain3D;
 
+public: // Constants
+	static inline const int CELL_SIZE = 32;
+
+private:
 	Terrain3D *_terrain = nullptr;
 
-	// MM Resources stored in Terrain3DStorage::_multimeshes as
-	// Dictionary[region_offset:Vector2i] -> Dictionary[mesh_id:int] -> MultiMesh
+	// MM Resources stored in Terrain3DRegion::_instances as
+	// Region::_instances{mesh_id:int} -> cell{v2i} -> [ TypedArray<Transform3D>, PackedColorArray, modified:bool ]
+
 	// MMI Objects attached to tree, freed in destructor, stored as
-	// Dictionary[Vector3i(region_offset.x, region_offset.y, mesh_id)] -> MultiMeshInstance3D
-	Dictionary _mmis;
+	// _mmi_nodes{region_loc} -> mesh{v2i(mesh_id,lod)} -> cell{v2i} -> MultiMeshInstance3D
+	typedef std::unordered_map<Vector2i, MultiMeshInstance3D *, Vector2iHash> CellMMIDict;
+	typedef std::unordered_map<Vector2i, CellMMIDict, Vector2iHash> MeshMMIDict;
+	std::unordered_map<Vector2i, MeshMMIDict, Vector2iHash> _mmi_nodes;
 
-	uint32_t _instance_counter = 0;
-	int _get_instace_count(const real_t p_density);
+	// Region MMI containers named Terrain3D/MMI/Region* are stored here as
+	// _mmi_containers{region_loc} -> Node3D
+	std::unordered_map<Vector2i, Node3D *, Vector2iHash> _mmi_containers;
 
-	void _rebuild_mmis();
-	void _update_mmis(const Vector2i &p_region_offset = Vector2i(INT32_MAX, INT32_MAX), const int p_mesh_id = -1);
-	void _destroy_mmi_by_region_id(const int p_region, const int p_mesh_id);
-	void _destroy_mmi_by_offset(const Vector2i &p_region_offset, const int p_mesh_id);
+	uint32_t _density_counter = 0;
+	uint32_t _get_density_count(const real_t p_density);
+
+	void _update_mmis(const Vector2i &p_region_loc = V2I_MAX, const int p_mesh_id = -1);
+	void _update_vertex_spacing(const real_t p_vertex_spacing);
+	void _destroy_mmi_by_cell(const Vector2i &p_region_loc, const int p_mesh_id, const Vector2i p_cell);
+	void _destroy_mmi_by_location(const Vector2i &p_region_loc, const int p_mesh_id);
+	void _backup_regionl(const Vector2i &p_region_loc);
+	void _backup_region(const Ref<Terrain3DRegion> &p_region);
+	Ref<MultiMesh> _create_multimesh(const int p_mesh_id, const TypedArray<Transform3D> &p_xforms = TypedArray<Transform3D>(), const PackedColorArray &p_colors = PackedColorArray()) const;
+	Vector2i _get_cell(const Vector3 &p_global_position, const int p_region_size);
 
 public:
 	Terrain3DInstancer() {}
-	~Terrain3DInstancer();
+	~Terrain3DInstancer() { destroy(); }
 
 	void initialize(Terrain3D *p_terrain);
 	void destroy();
+
 	void clear_by_mesh(const int p_mesh_id);
-	void clear_by_region_id(const int p_region_id, const int p_mesh_id);
-	void clear_by_offset(const Vector2i &p_region_offset, const int p_mesh_id);
+	void clear_by_location(const Vector2i &p_region_loc, const int p_mesh_id);
+	void clear_by_region(const Ref<Terrain3DRegion> &p_region, const int p_mesh_id);
 
 	void add_instances(const Vector3 &p_global_position, const Dictionary &p_params);
 	void remove_instances(const Vector3 &p_global_position, const Dictionary &p_params);
-	void add_multimesh(const int p_mesh_id, const Ref<MultiMesh> &p_multimesh, const Transform3D &p_xform = Transform3D());
-	void add_transforms(const int p_mesh_id, const TypedArray<Transform3D> &p_xforms, const TypedArray<Color> &p_colors = TypedArray<Color>());
-	void append_multimesh(const Vector2i &p_region_offset, const int p_mesh_id, const TypedArray<Transform3D> &p_xforms, const TypedArray<Color> &p_colors, const bool p_clear = false);
+	void add_multimesh(const int p_mesh_id, const Ref<MultiMesh> &p_multimesh, const Transform3D &p_xform = Transform3D(), const bool p_update = true);
+	void add_transforms(const int p_mesh_id, const TypedArray<Transform3D> &p_xforms, const PackedColorArray &p_colors = PackedColorArray(), const bool p_update = true);
+	void append_location(const Vector2i &p_region_loc, const int p_mesh_id, const TypedArray<Transform3D> &p_xforms,
+			const PackedColorArray &p_colors, const bool p_update = true);
+	void append_region(const Ref<Terrain3DRegion> &p_region, const int p_mesh_id, const TypedArray<Transform3D> &p_xforms,
+			const PackedColorArray &p_colors, const bool p_update = true);
 	void update_transforms(const AABB &p_aabb);
+	void copy_paste_dfr(const Terrain3DRegion *p_src_region, const Rect2i &p_src_rect, const Terrain3DRegion *p_dst_region);
 
 	void swap_ids(const int p_src_id, const int p_dst_id);
-	Ref<MultiMesh> get_multimesh(const Vector3 &p_global_position, const int p_mesh_id) const;
-	Ref<MultiMesh> get_multimesh(const Vector2i &p_region_offset, const int p_mesh_id) const;
-	MultiMeshInstance3D *get_multimesh_instance(const Vector3 &p_global_position, const int p_mesh_id) const;
-	MultiMeshInstance3D *get_multimesh_instance(const Vector2i &p_region_offset, const int p_mesh_id) const;
-	Dictionary get_mmis() const { return _mmis; }
-	void set_cast_shadows(const int p_mesh_id, const GeometryInstance3D::ShadowCastingSetting p_cast_shadows);
-	void reset_instance_counter() { _instance_counter = 0; }
+	void force_update_mmis();
 
-	void print_multimesh_buffer(MultiMeshInstance3D *p_mmi) const;
+	void reset_density_counter() { _density_counter = 0; }
+	void dump_data();
+	void dump_mmis();
 
 protected:
 	static void _bind_methods();
 };
 
 // Allows us to instance every X function calls for sparse placement
-// Modifies _instance_counter, not const!
-inline int Terrain3DInstancer::_get_instace_count(const real_t p_density) {
+// Modifies _density_counter, not const!
+inline uint32_t Terrain3DInstancer::_get_density_count(const real_t p_density) {
 	uint32_t count = 0;
-	if (p_density < 1.f && _instance_counter++ % int(1.f / p_density) == 0) {
+	if (p_density < 1.f && _density_counter++ % uint32_t(1.f / p_density) == 0) {
 		count = 1;
 	} else if (p_density >= 1.f) {
-		count = int(p_density);
+		count = uint32_t(p_density);
 	}
 	return count;
 }

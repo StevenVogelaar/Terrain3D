@@ -17,12 +17,6 @@
 				Returns the RID of the material used with the Rendering Server. This is set per instance of this class.
 			</description>
 		</method>
-		<method name="get_region_blend_map" qualifiers="const">
-			<return type="RID" />
-			<description>
-				Returns the RID of the 512x512 texture used with the RenderingServer. It depicts a blurry map of region locations and is used for smoothly blending world noise into sculpted terrain.
-			</description>
-		</method>
 		<method name="get_shader_param" qualifiers="const">
 			<return type="Variant" />
 			<param index="0" name="name" type="StringName" />
@@ -37,9 +31,11 @@
 			</description>
 		</method>
 		<method name="save">
-			<return type="void" />
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" default="&quot;&quot;" />
 			<description>
 				Saves this material resource to disk, if saved as an external [code skip-lint].tres[/code] or [code skip-lint].res[/code] resource file.
+				path - specifies a directory and file name to use from now on.
 			</description>
 		</method>
 		<method name="set_shader_param">
@@ -101,8 +97,14 @@
 		<member name="show_heightmap" type="bool" setter="set_show_heightmap" getter="get_show_heightmap" default="false">
 			Albedo is a white to black gradient depending on height. The gradient is scaled to a height of 300, so above that or far below 0 will be all white or black.
 		</member>
+		<member name="show_instancer_grid" type="bool" setter="set_show_instancer_grid" getter="get_show_instancer_grid" default="false">
+			Draws the 32x32m cell grid on the terrain, which shows how the instancer data is partitioned.
+		</member>
 		<member name="show_navigation" type="bool" setter="set_show_navigation" getter="get_show_navigation" default="false">
 			Displays the area designated for generating the navigation mesh.
+		</member>
+		<member name="show_region_grid" type="bool" setter="set_show_region_grid" getter="get_show_region_grid" default="false">
+			Draws the region grid directly on the terrain. This is more accurate than the region grid gizmo for determining where the region border is when editing.
 		</member>
 		<member name="show_roughmap" type="bool" setter="set_show_roughmap" getter="get_show_roughmap" default="false">
 			Albedo is set to the roughness modification map as grey scale. Middle grey, 0.5 means no roughness modification. Black would be high gloss while white is very rough.
