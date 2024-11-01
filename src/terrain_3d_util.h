@@ -140,7 +140,7 @@ inline uint32_t gd_get_base(const uint32_t p_pixel) { return get_base(p_pixel); 
 inline uint32_t gd_enc_base(const uint32_t p_base) { return enc_base(p_base); }
 inline uint32_t gd_get_overlay(const uint32_t p_pixel) { return get_overlay(p_pixel); }
 inline uint32_t gd_enc_overlay(const uint32_t p_over) { return enc_overlay(p_over); }
-inline uint32_t gd_get_blend(const uint32_t p_pixel) { return get_overlay(p_pixel); }
+inline uint32_t gd_get_blend(const uint32_t p_pixel) { return get_blend(p_pixel); }
 inline uint32_t gd_enc_blend(const uint32_t p_blend) { return enc_blend(p_blend); }
 inline bool gd_is_hole(const uint32_t p_pixel) { return is_hole(p_pixel); }
 inline bool gd_is_auto(const uint32_t p_pixel) { return is_auto(p_pixel); }
