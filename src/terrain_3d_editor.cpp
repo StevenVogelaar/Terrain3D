@@ -457,13 +457,6 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 					if (tex_id != asset_id) {
 						continue;
 					}
-
-					// Convert back to bitfield
-					uint32_t grass_int = uint32_t(CLAMP(Math::round(grass * 255.f), 0.f, 255.f));
-					uint32_t bits = enc_grass(uint8_t(grass * 255.f)) | enc_ground_1(ground_1_tex);
-
-					// Write back to pixel in FORMAT_RF. Must be a 32-bit float
-					dest = Color(as_float(bits), 0.f, 0.f, 1.f);
 				}
 				if (!data->is_in_slope(brush_global_position, slope_range, modifier_alt)) {
 					continue;

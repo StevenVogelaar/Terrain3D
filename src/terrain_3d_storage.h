@@ -119,8 +119,9 @@ public:
 	void set_control_maps(const TypedArray<Image> &p_maps) { set_maps(TYPE_CONTROL, p_maps); }
 	TypedArray<Image> get_control_maps() const { return _control_maps; }
 	void set_color_maps(const TypedArray<Image> &p_maps) { set_maps(TYPE_COLOR, p_maps); }
-	void set_grass_maps(const TypedArray<Image> &p_maps) { set_maps(TYPE_GRASS, p_maps); }
 	TypedArray<Image> get_color_maps() const { return _color_maps; }
+	void set_grass_maps(const TypedArray<Image> &p_maps) { set_maps(TYPE_GRASS, p_maps); }
+	TypedArray<Image> get_grass_maps() const { return _grass_maps; }
 
 	// Instancer
 	void set_multimeshes(const Dictionary &p_multimeshes);

@@ -17,7 +17,7 @@ class Terrain3DData : public Object {
 	friend Terrain3D;
 
 public: // Constants
-	static inline const real_t CURRENT_VERSION = 0.93f;
+	static inline const real_t CURRENT_VERSION = 0.94f;
 	static inline const int REGION_MAP_SIZE = 32;
 	static inline const Vector2i REGION_MAP_VSIZE = Vector2i(REGION_MAP_SIZE, REGION_MAP_SIZE);
 
@@ -146,8 +146,8 @@ public:
 	void set_height(const Vector3 &p_global_position, const real_t p_height);
 	real_t get_height(const Vector3 &p_global_position) const;
 	void set_color(const Vector3 &p_global_position, const Color &p_color);
-	Color get_grass(const Vector3 &p_global_position) const;
-	void set_grass(const Vector3 &p_global_position, const Color &p_grass);
+	uint32_t get_grass(const Vector3 &p_global_position) const;
+	void set_grass(const Vector3 &p_global_position, const uint32_t p_grass);
 	Color get_color(const Vector3 &p_global_position) const;
 	void set_control(const Vector3 &p_global_position, const uint32_t p_control);
 	uint32_t get_control(const Vector3 &p_global_position) const;
@@ -257,13 +257,12 @@ inline void Terrain3DData::set_color(const Vector3 &p_global_position, const Col
 	clr.a = get_roughness(p_global_position);
 	set_pixel(TYPE_COLOR, p_global_position, clr);
 }
-
-inline Color Terrain3DData::get_grass(const Vector3 &p_global_position) const {
+inline uint32_t Terrain3DData::get_grass(const Vector3 &p_global_position) const {
 	real_t val = get_pixel(TYPE_GRASS, p_global_position).r;
 	return (std::isnan(val)) ? UINT32_MAX : as_uint(val);
 }
 
-inline void Terrain3DData::set_grass(const Vector3 &p_global_position, const Color &p_grass) {
+inline void Terrain3DData::set_grass(const Vector3 &p_global_position, const uint32_t p_grass) {
 	set_pixel(TYPE_GRASS, p_global_position, Color(as_float(p_grass), 0.f, 0.f, 1.f));
 }
 

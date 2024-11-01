@@ -25,7 +25,7 @@ public: // Constants
 		Image::FORMAT_RF, // TYPE_HEIGHT
 		Image::FORMAT_RF, // TYPE_CONTROL
 		Image::FORMAT_RGBA8, // TYPE_COLOR
-		IMAGE::FORMAT_RF, // TYPE_GRASS
+		Image::FORMAT_RF, // TYPE_GRASS
 		Image::Format(TYPE_MAX), // Proper size of array instead of FORMAT_MAX
 	};
 

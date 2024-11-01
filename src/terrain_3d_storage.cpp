@@ -60,7 +60,7 @@ void Terrain3DStorage::set_maps(const MapType p_map_type, const TypedArray<Image
 			_color_maps = p_maps;
 			break;
 		case TYPE_GRASS:
-			_grass_maps = sanitize_maps(TYPE_GRASS, p_maps);
+			_grass_maps = p_maps;
 			break;
 		default:
 			break;
@@ -132,8 +132,9 @@ void Terrain3DStorage::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_control_maps", "maps"), &Terrain3DStorage::set_control_maps);
 	ClassDB::bind_method(D_METHOD("get_control_maps"), &Terrain3DStorage::get_control_maps);
 	ClassDB::bind_method(D_METHOD("set_color_maps", "maps"), &Terrain3DStorage::set_color_maps);
-	ClassDB::bind_method(D_METHOD("set_grass_maps", "maps"), &Terrain3DStorage::set_grass_maps);
 	ClassDB::bind_method(D_METHOD("get_color_maps"), &Terrain3DStorage::get_color_maps);
+	ClassDB::bind_method(D_METHOD("set_grass_maps", "maps"), &Terrain3DStorage::set_grass_maps);
+	ClassDB::bind_method(D_METHOD("get_grass_maps"), &Terrain3DStorage::get_grass_maps);
 
 	ClassDB::bind_method(D_METHOD("set_multimeshes", "multimeshes"), &Terrain3DStorage::set_multimeshes);
 	ClassDB::bind_method(D_METHOD("get_multimeshes"), &Terrain3DStorage::get_multimeshes);

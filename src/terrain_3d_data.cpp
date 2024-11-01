@@ -25,6 +25,7 @@ void Terrain3DData::_clear() {
 	_generated_height_maps.clear();
 	_generated_control_maps.clear();
 	_generated_color_maps.clear();
+	_generated_grass_maps.clear();
 }
 
 // Structured to work with do_for_regions. Should be renamed when copy_paste is expanded
@@ -439,6 +440,9 @@ TypedArray<Image> Terrain3DData::get_maps(const MapType p_map_type) const {
 		case TYPE_COLOR:
 			return get_color_maps();
 			break;
+		case TYPE_GRASS:
+			return get_grass_maps();
+			break;
 		default:
 			break;
 	}
@@ -457,10 +461,14 @@ void Terrain3DData::force_update_maps(const MapType p_map_type, const bool p_gen
 		case TYPE_COLOR:
 			_generated_color_maps.clear();
 			break;
+		case TYPE_GRASS:
+			_generated_grass_maps.clear();
+			break;
 		default:
 			_generated_height_maps.clear();
 			_generated_control_maps.clear();
 			_generated_color_maps.clear();
+			_generated_grass_maps.clear();
 			_region_map_dirty = true;
 			break;
 	}
@@ -547,6 +555,19 @@ void Terrain3DData::update_maps(const MapType p_map_type) {
 		emit_signal("color_maps_changed");
 	}
 
+	if (_generated_grass_maps.is_dirty()) {
+		LOG(EXTREME, "Regenerating grass texture array from regions");
+		_grass_maps.clear();
+		for (int i = 0; i < _region_locations.size(); i++) {
+			Vector2i region_loc = _region_locations[i];
+			Ref<Terrain3DRegion> region = get_region(region_loc);
+			_grass_maps.push_back(region->get_grass_map());
+		}
+		_generated_grass_maps.create(_grass_maps);
+		any_changed = true;
+		emit_signal("grass_maps_changed");
+	}
+
 	if (!any_changed) {
 		// If no maps have been rebuilt, it's safe to update individual layers. Regions marked Edited
 		// have either been recently changed by Terrain3DEditor::_operate_map or were marked by undo / redo.
@@ -568,13 +589,19 @@ void Terrain3DData::update_maps(const MapType p_map_type) {
 						_generated_color_maps.update(region->get_color_map(), region_id);
 						emit_signal("color_maps_changed");
 						break;
+					case TYPE_GRASS:
+						_generated_grass_maps.update(region->get_grass_map(), region_id);
+						emit_signal("grass_maps_changed");
+						break;
 					default:
 						_generated_height_maps.update(region->get_height_map(), region_id);
 						_generated_control_maps.update(region->get_control_map(), region_id);
 						_generated_color_maps.update(region->get_color_map(), region_id);
+						_generated_grass_maps.update(region->get_grass_map(), region_id);
 						emit_signal("height_maps_changed");
 						emit_signal("control_maps_changed");
 						emit_signal("color_maps_changed");
+						emit_signal("grass_maps_changed");
 						break;
 				}
 			}
@@ -1094,10 +1121,12 @@ void Terrain3DData::print_audit_data() const {
 	Util::dump_maps(_height_maps, "Height maps");
 	Util::dump_maps(_control_maps, "Control maps");
 	Util::dump_maps(_color_maps, "Color maps");
+	Util::dump_maps(_grass_maps, "Grass maps");
 
 	Util::dump_gentex(_generated_height_maps, "height");
 	Util::dump_gentex(_generated_control_maps, "control");
 	Util::dump_gentex(_generated_color_maps, "color");
+	Util::dump_gentex(_generated_grass_maps, "grass");
 }
 
 ///////////////////////////
@@ -1151,10 +1180,12 @@ void Terrain3DData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_control_maps"), &Terrain3DData::get_control_maps);
 	ClassDB::bind_method(D_METHOD("get_color_maps"), &Terrain3DData::get_color_maps);
 	ClassDB::bind_method(D_METHOD("get_maps", "map_type"), &Terrain3DData::get_maps);
+	ClassDB::bind_method(D_METHOD("get_grass_maps"), &Terrain3DData::get_grass_maps);
 	ClassDB::bind_method(D_METHOD("force_update_maps", "map_type", "generate_mipmaps"), &Terrain3DData::force_update_maps, DEFVAL(TYPE_MAX), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("get_height_maps_rid"), &Terrain3DData::get_height_maps_rid);
 	ClassDB::bind_method(D_METHOD("get_control_maps_rid"), &Terrain3DData::get_control_maps_rid);
 	ClassDB::bind_method(D_METHOD("get_color_maps_rid"), &Terrain3DData::get_color_maps_rid);
+	ClassDB::bind_method(D_METHOD("get_grass_maps_rid"), &Terrain3DData::get_grass_maps_rid);
 
 	ClassDB::bind_method(D_METHOD("set_pixel", "map_type", "global_position", "pixel"), &Terrain3DData::set_pixel);
 	ClassDB::bind_method(D_METHOD("get_pixel", "map_type", "global_position"), &Terrain3DData::get_pixel);
@@ -1201,11 +1232,13 @@ void Terrain3DData::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "height_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_height_maps");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "control_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_control_maps");
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "color_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_color_maps");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "grass_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_grass_maps");
 
 	ADD_SIGNAL(MethodInfo("maps_changed"));
 	ADD_SIGNAL(MethodInfo("region_map_changed"));
 	ADD_SIGNAL(MethodInfo("height_maps_changed"));
 	ADD_SIGNAL(MethodInfo("control_maps_changed"));
 	ADD_SIGNAL(MethodInfo("color_maps_changed"));
+	ADD_SIGNAL(MethodInfo("grass_maps_changed"));
 	ADD_SIGNAL(MethodInfo("maps_edited", PropertyInfo(Variant::AABB, "edited_area")));
 }

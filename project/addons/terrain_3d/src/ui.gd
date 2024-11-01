@@ -292,7 +292,7 @@ func _modify_operation(p_operation: Terrain3DEditor.Operation) -> Terrain3DEdito
 	if DisplayServer.is_touchscreen_available():
 		var removable_tools := [Terrain3DEditor.REGION, Terrain3DEditor.SCULPT, Terrain3DEditor.HEIGHT, Terrain3DEditor.AUTOSHADER,
 			Terrain3DEditor.HOLES, Terrain3DEditor.INSTANCER, Terrain3DEditor.NAVIGATION, 
-			Terrain3DEditor.COLOR. Terrain3DEditor.GRASS, Terrain3DEditor.ROUGHNESS]
+			Terrain3DEditor.COLOR, Terrain3DEditor.GRASS, Terrain3DEditor.ROUGHNESS]
 		remove_checked = brush_data.get("remove", false) && plugin.editor.get_tool() in removable_tools
 		
 	if plugin.modifier_ctrl or remove_checked:
