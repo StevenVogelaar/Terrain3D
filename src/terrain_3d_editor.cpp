@@ -505,7 +505,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 					default:
 						break;
 				}
-			} 	else if (map_type == Terrain3DStorage::TYPE_GRASS){
+			} 	else if (map_type == TYPE_GRASS){
 
 				real_t grass = real_t(get_grass(src.r)) / 255.f;
 				bool ground_1_tex = is_ground_1(src.r);
@@ -842,7 +842,9 @@ void Terrain3DEditor::stop_operation() {
 			// Make duplicate for redo backup
 			_edited_regions[i] = region->duplicate(true);
 		}
-		_store_undo();
+		if (IS_EDITOR){
+			_store_undo();
+		}
 	}
 	_undo_data.clear();
 	_original_regions = TypedArray<Terrain3DRegion>(); //New pointers instead of clear

@@ -346,13 +346,9 @@ func update_decal() -> void:
 			Terrain3DEditor.HEIGHT:
 				editor_decal_color[0] = COLOR_PICK_HEIGHT
 			Terrain3DEditor.COLOR:
-<<<<<<< HEAD
-				decal.modulate = COLOR_PICK_COLOR
-			Terrain3DEditor.GRASS:
-				decal.modulate = COLOR_PICK_GRASS
-=======
 				editor_decal_color[0] = COLOR_PICK_COLOR
->>>>>>> physics-frame
+			Terrain3DEditor.GRASS:
+				editor_decal_color[0] = COLOR_PICK_GRASS
 			Terrain3DEditor.ROUGHNESS:
 				editor_decal_color[0] = COLOR_PICK_ROUGH
 		editor_decal_color[0].a = 1.0
@@ -396,16 +392,11 @@ func update_decal() -> void:
 						editor_decal_color[0] = COLOR_SPRAY
 						editor_decal_color[0].a = clamp(brush_data["strength"], .15, .4)
 			Terrain3DEditor.COLOR:
-<<<<<<< HEAD
-				decal.modulate = brush_data["color"].srgb_to_linear()
-				decal.modulate.a *= clamp(brush_data["strength"], .2, .5)
-			Terrain3DEditor.GRASS:
-				decal.modulate = COLOR_GRASS
-				decal.modulate.a = clamp(brush_data["strength"], .2, .5)
-=======
 				editor_decal_color[0] = brush_data["color"].srgb_to_linear()
 				editor_decal_color[0].a *= clamp(brush_data["strength"], .2, .5)
->>>>>>> physics-frame
+			Terrain3DEditor.GRASS:
+				editor_decal_color[0] = COLOR_GRASS
+				editor_decal_color[0].a = clamp(brush_data["strength"], .2, .5)
 			Terrain3DEditor.ROUGHNESS:
 				editor_decal_color[0] = COLOR_ROUGHNESS
 				editor_decal_color[0].a = clamp(brush_data["strength"], .2, .5) + .1
@@ -509,7 +500,7 @@ func pick(p_global_position: Vector3) -> void:
 			Terrain3DEditor.COLOR:
 				color = plugin.terrain.data.get_color(p_global_position)
 			Terrain3DEditor.GRASS:
-				color = plugin.terrain.data.get_pixel(Terrain3DStorage.TYPE_GRASS, p_global_position)
+				color = plugin.terrain.data.get_pixel(Terrain3DRegion.TYPE_GRASS, p_global_position)
 			Terrain3DEditor.ANGLE:
 				color = Color(plugin.terrain.data.get_control_angle(p_global_position), 0., 0., 1.)
 			Terrain3DEditor.SCALE:

@@ -335,6 +335,7 @@ void Terrain3DRegion::_bind_methods() {
 	BIND_ENUM_CONSTANT(TYPE_HEIGHT);
 	BIND_ENUM_CONSTANT(TYPE_CONTROL);
 	BIND_ENUM_CONSTANT(TYPE_COLOR);
+	BIND_ENUM_CONSTANT(TYPE_GRASS);
 	BIND_ENUM_CONSTANT(TYPE_MAX);
 
 	ClassDB::bind_method(D_METHOD("set_version", "version"), &Terrain3DRegion::set_version);
