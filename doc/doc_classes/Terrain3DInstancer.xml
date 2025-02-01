@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="Terrain3DInstancer" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+<class name="Terrain3DInstancer" inherits="Object" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -119,7 +119,7 @@
 			<param index="0" name="global_position" type="Vector3" />
 			<param index="1" name="params" type="Dictionary" />
 			<description>
-				Uses parameters asset_id, size, strength, fixed_scale, random_scale, to randomly remove instances within the indicated brush position and size.
+				Uses parameters asset_id, size, strength, fixed_scale, random_scale, slope (Vector2), to randomly remove instances within the indicated brush position and size.
 			</description>
 		</method>
 		<method name="swap_ids">

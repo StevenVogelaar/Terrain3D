@@ -1,4 +1,4 @@
-// Copyright © 2024 Cory Petkovsek, Roope Palmroos, and Contributors.
+// Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/fast_noise_lite.hpp>
@@ -124,6 +124,7 @@ String Terrain3DMaterial::_generate_shader_code() const {
 	if (_world_background != NOISE) {
 		excludes.push_back("WORLD_NOISE1");
 		excludes.push_back("WORLD_NOISE2");
+		excludes.push_back("WORLD_NOISE3");
 	}
 	if (_texture_filtering == LINEAR) {
 		excludes.push_back("TEXTURE_SAMPLERS_NEAREST");
@@ -183,7 +184,7 @@ String Terrain3DMaterial::_inject_editor_code(const String &p_shader) const {
 		return shader;
 	}
 	insert_names.clear();
-	if (_compatibility) {
+	if (IS_EDITOR && _terrain && _terrain->get_editor()) {
 		insert_names.push_back("EDITOR_SETUP_DECAL");
 	}
 	for (int i = 0; i < insert_names.size(); i++) {
@@ -193,7 +194,25 @@ String Terrain3DMaterial::_inject_editor_code(const String &p_shader) const {
 	}
 
 	// Insert at the end of the shader, before the end of `fragment(){ }`
-	idx = shader.rfind("}");
+	// Check for each nested {} pair until the closing } is found.
+	regex->compile("void\\s*fragment\\s*\\(\\s*\\)\\s*{");
+	match = regex->search(shader);
+	idx = -1;
+	if (match.is_valid()) {
+		int start_idx = match->get_end() - 1;
+		int pair = 0;
+		for (int i = start_idx; i < shader.length(); i++) {
+			if (shader[i] == '{') {
+				pair++;
+			} else if (shader[i] == '}') {
+				pair--;
+			}
+			if (pair == 0) {
+				idx = i;
+				break;
+			}
+		}
+	}
 	if (idx < 0) {
 		LOG(DEBUG, "No ending bracket; cannot inject editor code");
 		return shader;
@@ -241,21 +260,21 @@ String Terrain3DMaterial::_inject_editor_code(const String &p_shader) const {
 	if (_debug_view_region_grid) {
 		insert_names.push_back("DEBUG_REGION_GRID");
 	}
-	if (_debug_view_vertex_grid) {
-		insert_names.push_back("DEBUG_VERTEX_GRID");
-	}
 	if (_debug_view_instancer_grid) {
 		insert_names.push_back("DEBUG_INSTANCER_GRID");
+	}
+	if (_debug_view_vertex_grid) {
+		insert_names.push_back("DEBUG_VERTEX_GRID");
 	}
 	if (_show_navigation || (IS_EDITOR && _terrain && _terrain->get_editor() && _terrain->get_editor()->get_tool() == Terrain3DEditor::NAVIGATION)) {
 		insert_names.push_back("EDITOR_NAVIGATION");
 	}
-	if (_compatibility) {
+	if (IS_EDITOR && _terrain && _terrain->get_editor()) {
 		insert_names.push_back("EDITOR_RENDER_DECAL");
 	}
 	for (int i = 0; i < insert_names.size(); i++) {
 		String insert = _shader_code[insert_names[i]];
-		shader = shader.insert(idx - 1, "\n" + insert);
+		shader = shader.insert(idx, "\n" + insert);
 		idx += insert.length();
 	}
 	return shader;
@@ -642,15 +661,15 @@ void Terrain3DMaterial::set_show_region_grid(const bool p_enabled) {
 	_update_shader();
 }
 
-void Terrain3DMaterial::set_show_vertex_grid(const bool p_enabled) {
-	LOG(INFO, "Enable show_vertex_grid: ", p_enabled);
-	_debug_view_vertex_grid = p_enabled;
+void Terrain3DMaterial::set_show_instancer_grid(const bool p_enabled) {
+	LOG(INFO, "Enable show_instancer_grid: ", p_enabled);
+	_debug_view_instancer_grid = p_enabled;
 	_update_shader();
 }
 
-void Terrain3DMaterial::set_show_instancer_grid(const bool p_enabled) {
+void Terrain3DMaterial::set_show_vertex_grid(const bool p_enabled) {
 	LOG(INFO, "Enable show_vertex_grid: ", p_enabled);
-	_debug_view_instancer_grid = p_enabled;
+	_debug_view_vertex_grid = p_enabled;
 	_update_shader();
 }
 
@@ -879,10 +898,10 @@ void Terrain3DMaterial::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_show_texture_rough"), &Terrain3DMaterial::get_show_texture_rough);
 	ClassDB::bind_method(D_METHOD("set_show_region_grid", "enabled"), &Terrain3DMaterial::set_show_region_grid);
 	ClassDB::bind_method(D_METHOD("get_show_region_grid"), &Terrain3DMaterial::get_show_region_grid);
-	ClassDB::bind_method(D_METHOD("set_show_vertex_grid", "enabled"), &Terrain3DMaterial::set_show_vertex_grid);
-	ClassDB::bind_method(D_METHOD("get_show_vertex_grid"), &Terrain3DMaterial::get_show_vertex_grid);
 	ClassDB::bind_method(D_METHOD("set_show_instancer_grid", "enabled"), &Terrain3DMaterial::set_show_instancer_grid);
 	ClassDB::bind_method(D_METHOD("get_show_instancer_grid"), &Terrain3DMaterial::get_show_instancer_grid);
+	ClassDB::bind_method(D_METHOD("set_show_vertex_grid", "enabled"), &Terrain3DMaterial::set_show_vertex_grid);
+	ClassDB::bind_method(D_METHOD("get_show_vertex_grid"), &Terrain3DMaterial::get_show_vertex_grid);
 
 	ClassDB::bind_method(D_METHOD("save", "path"), &Terrain3DMaterial::save, DEFVAL(""));
 
@@ -910,6 +929,6 @@ void Terrain3DMaterial::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_texture_normal", PROPERTY_HINT_NONE), "set_show_texture_normal", "get_show_texture_normal");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_texture_rough", PROPERTY_HINT_NONE), "set_show_texture_rough", "get_show_texture_rough");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_region_grid", PROPERTY_HINT_NONE), "set_show_region_grid", "get_show_region_grid");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_vertex_grid", PROPERTY_HINT_NONE), "set_show_vertex_grid", "get_show_vertex_grid");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_instancer_grid", PROPERTY_HINT_NONE), "set_show_instancer_grid", "get_show_instancer_grid");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_vertex_grid", PROPERTY_HINT_NONE), "set_show_vertex_grid", "get_show_vertex_grid");
 }

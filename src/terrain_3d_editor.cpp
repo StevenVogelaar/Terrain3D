@@ -1,4 +1,4 @@
-// Copyright © 2024 Cory Petkovsek, Roope Palmroos, and Contributors.
+// Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
 #include <godot_cpp/classes/editor_undo_redo_manager.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -55,7 +55,7 @@ Ref<Terrain3DRegion> Terrain3DEditor::_operate_region(const Vector2i &p_region_l
 	// Create new region if location is null or deleted
 	if (region.is_null() || (region.is_valid() && region->is_deleted())) {
 		// And tool is Add Region, or Height + auto_regions
-		if ((_tool == REGION && _operation == ADD) || (_tool == SCULPT && _brush_data["auto_regions"])) {
+		if ((_tool == REGION && _operation == ADD) || ((_tool == SCULPT || _tool == HEIGHT) && _brush_data["auto_regions"])) {
 			region = data->add_region_blank(p_region_loc);
 			changed = true;
 			if (region.is_null()) {
@@ -96,7 +96,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 
 	// If no region and can't add one, skip whole function. Checked again later
 	Terrain3DData *data = _terrain->get_data();
-	if (!data->has_regionp(p_global_position) && (!_brush_data["auto_regions"] || _tool != SCULPT)) {
+	if (!data->has_regionp(p_global_position) && (!_brush_data["auto_regions"] || (_tool != SCULPT && _tool != HEIGHT))) {
 		return;
 	}
 
@@ -217,12 +217,15 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 			// Start brushing on the map
 			real_t brush_alpha = brush_image->get_pixelv(brush_pixel_position).r;
 			brush_alpha = real_t(Math::pow(double(brush_alpha), double(gamma)));
+			brush_alpha = std::isnan(brush_alpha) || std::isnan(brush_alpha) ? 0.f : CLAMP(brush_alpha, 0.f, 1.f);
 			Color src = map->get_pixelv(map_pixel_position);
 			Color dest = src;
 
 			if (map_type == TYPE_HEIGHT) {
 				real_t srcf = src.r;
-				real_t destf = dest.r;
+				// In case data in existing map has nan or inf saved, check, and reset to real number if required.
+				srcf = std::isnan(srcf) || std::isnan(srcf) ? 0.f : srcf;
+				real_t destf = srcf;
 
 				switch (_operation) {
 					case ADD: {
@@ -258,21 +261,22 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 						Vector3 right_position = brush_global_position + Vector3(vertex_spacing, 0.f, 0.f);
 						Vector3 down_position = brush_global_position - Vector3(0.f, 0.f, vertex_spacing);
 						Vector3 up_position = brush_global_position + Vector3(0.f, 0.f, vertex_spacing);
+						real_t bg_srcf_zero = _terrain->get_material()->get_world_background() == 0u ? srcf : 0.0;
 						real_t left = data->get_pixel(map_type, left_position).r;
 						if (std::isnan(left)) {
-							left = 0.f;
+							left = bg_srcf_zero;
 						}
 						real_t right = data->get_pixel(map_type, right_position).r;
 						if (std::isnan(right)) {
-							right = 0.f;
+							right = bg_srcf_zero;
 						}
 						real_t up = data->get_pixel(map_type, up_position).r;
 						if (std::isnan(up)) {
-							up = 0.f;
+							up = bg_srcf_zero;
 						}
 						real_t down = data->get_pixel(map_type, down_position).r;
 						if (std::isnan(down)) {
-							down = 0.f;
+							down = bg_srcf_zero;
 						}
 						real_t avg = (srcf + left + right + up + down) * 0.2f;
 						destf = Math::lerp(srcf, avg, CLAMP(brush_alpha * strength * 2.f, .02f, 1.f));
@@ -322,7 +326,6 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 				bool hole = is_hole(src.r);
 				bool navigation = is_nav(src.r);
 				bool autoshader = is_auto(src.r);
-				real_t alpha_clip = (brush_alpha > 0.5f) ? 1.f : 0.f;
 				// Lookup to shift values saved to control map so that 0 (default) is the first entry
 				// Shader scale array is aligned to match this.
 				std::array<uint32_t, 8> scale_align = { 5, 6, 7, 0, 1, 2, 3, 4 };
@@ -337,10 +340,11 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 							case REPLACE: {
 								if (brush_alpha > 0.5f) {
 									if (enable_texture) {
-										// Set base texture
+										// Set base & overlay texture
 										base_id = asset_id;
+										overlay_id = asset_id;
 										// Erase blend value
-										blend = Math::lerp(blend, real_t(0.f), alpha_clip);
+										blend = 0.f;
 										autoshader = false;
 									}
 									// Set angle & scale
@@ -368,21 +372,28 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 								real_t spray_strength = CLAMP(strength * 0.05f, 0.004f, .25f);
 								real_t brush_value = CLAMP(brush_alpha * spray_strength, 0.f, 1.f);
 								if (enable_texture && brush_alpha * strength * 11.f > 0.1f) {
+									// Painted area, set overlay immediatley
 									if (base_id == overlay_id && blend < 0.004f) {
 										overlay_id = asset_id;
 									}
-									// If overlay and base texture are the same, reduce blend value
+									// Overlay and base texture are the same, reduce blend value
 									if (base_id == asset_id) {
 										blend = CLAMP(blend - brush_value, 0.f, 1.f);
 										if (blend < 0.5f && brush_alpha > 0.5f) {
 											autoshader = false;
 										}
 									} else {
-										// Else overlay and base are separate, set overlay texture and increase blend value
+										// Overlay and base are separate, increase blend value
 										blend = CLAMP(blend + brush_value, 0.f, 1.f);
+										// Overlay already visible, limit ID changes to high brush alpha
 										if (blend > 0.5f && brush_alpha > 0.5f) {
 											overlay_id = asset_id;
+											// Only remove auto shader when blend is past threshold.
 											autoshader = false;
+										}
+										// Overlay not visible at brush edge, write new ID ready for potential next pass
+										if (blend <= 0.5f && brush_alpha <= 0.5f) {
+											overlay_id = asset_id;
 										}
 									}
 								}
@@ -403,6 +414,18 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 										// Maintain 0 = 0, remap negatives to end.
 										uvscale = scale_align[uint8_t(CLAMP(Math::round((scale + 60.f) / 20.f), 0.f, 7.f))];
 									}
+								}
+								break;
+							}
+
+							// Overlay Spray reduce
+							case SUBTRACT: {
+								real_t spray_strength = CLAMP(strength * 0.05f, 0.004f, .25f);
+								real_t brush_value = CLAMP(brush_alpha * spray_strength, 0.f, 1.f);
+								blend = CLAMP(blend - brush_value, 0.f, 1.f);
+								// Reset to painted state
+								if (blend < 0.004f) {
+									overlay_id = base_id;
 								}
 								break;
 							}
@@ -476,7 +499,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 						if (_operation == ADD) {
 							dest.a = Math::lerp(real_t(src.a), real_t(.5f + .5f * roughness), brush_alpha * strength);
 						} else {
-							dest.a = Math::lerp(real_t(src.a), real_t(.5f + .5f * 0.5f), brush_alpha * strength);
+							dest.a = Math::lerp(real_t(src.a), real_t(.5f), brush_alpha * strength);
 						}
 						break;
 					default:
@@ -535,6 +558,14 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 		data->force_update_maps(map_type);
 	}
 	data->add_edited_area(edited_area);
+
+	if (_tool == HOLES || _tool == HEIGHT || _tool == SCULPT) {
+		_terrain->get_instancer()->update_transforms(edited_area);
+	}
+	// Update Dynamic / Editor collision
+	if (_terrain->get_collision_mode() == Terrain3DCollision::DYNAMIC_EDITOR) {
+		_terrain->get_collision()->update(true);
+	}
 }
 
 void Terrain3DEditor::_store_undo() {
@@ -561,9 +592,10 @@ void Terrain3DEditor::_store_undo() {
 		}
 	}
 
-	if (_undo_data.has("edited_area")) {
+	if (_terrain->get_data()->get_edited_area().has_volume()) {
 		_undo_data["edited_area"] = _terrain->get_data()->get_edited_area();
-		LOG(DEBUG, "Updating undo snapshot edited area: ", _undo_data["edited_area"]);
+		redo_data["edited_area"] = _terrain->get_data()->get_edited_area();
+		LOG(DEBUG, "Adding edited area to snapshots: ", _undo_data["edited_area"]);
 	}
 
 	// Store data in Godot's Undo/Redo Manager
@@ -608,6 +640,11 @@ void Terrain3DEditor::_apply_undo(const Dictionary &p_data) {
 		}
 	}
 
+	if (p_data.has("edited_area")) {
+		LOG(DEBUG, "Edited area: ", p_data["edited_area"]);
+		data->add_edited_area(p_data["edited_area"]);
+	}
+
 	if (p_data.has("added_regions")) {
 		LOG(DEBUG, "Added regions: ", p_data["added_regions"]);
 		TypedArray<Vector2i> region_locs = p_data["added_regions"];
@@ -624,6 +661,10 @@ void Terrain3DEditor::_apply_undo(const Dictionary &p_data) {
 			data->set_region_deleted(region_locs[i], false);
 			data->set_region_modified(region_locs[i], true);
 			LOG(DEBUG, "Marking region: ", region_locs[i], " -deleted, +modified");
+			Ref<Terrain3DRegion> region = data->get_region(region_locs[i]);
+			if (region.is_valid()) {
+				_send_region_aabb(region_locs[i], region->get_height_range());
+			}
 		}
 	}
 
@@ -690,7 +731,7 @@ void Terrain3DEditor::set_brush_data(const Dictionary &p_data) {
 	_brush_data["size"] = CLAMP(real_t(p_data.get("size", 10.f)), 0.1f, 4096.f); // Diameter in meters
 	_brush_data["strength"] = CLAMP(real_t(p_data.get("strength", .1f)) * .01f, .01f, 1000.f); // 1-100k% (max of 1000m per click)
 	// mouse_pressure injected in editor.gd and sanitized in _operate_map()
-	Vector2 slope = p_data.get("slope", V2_ZERO);
+	Vector2 slope = p_data.get("slope", Vector2(0.f, 90.f));
 	slope.x = CLAMP(slope.x, 0.f, 90.f);
 	slope.y = CLAMP(slope.y, 0.f, 90.f);
 	_brush_data["slope"] = slope; // 0-90 (degrees)

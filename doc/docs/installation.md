@@ -7,7 +7,7 @@ Installation & Upgrades
 * [Upgrading Terrain3D](#upgrading-terrain3d)
 
 ## Requirements
-* Terrain3D 0.9.3 supports Godot 4.2 & 4.3.
+* Terrain3D 1.0.0 supports Godot 4.3.
 * Supports Windows, Linux, and [macOS (read more)](platforms.md#macos).
 * Some platforms and renderers are experimental or unsupported. See [Supported Platforms](platforms.md).
 
@@ -59,9 +59,6 @@ To update Terrain3D:
 
 Don't just copy the new folder over the old, as this won't remove any files that we may have intentionally removed.
 
-4. **Upgrading to 0.9.3:** Terrain3D now stores data in a directory. When opening your 0.9.2 scene and selecting your Terrain3D node, a directory selection wizard will popup. If not, you can find it in the `Terrain3D Tools` menu at the top of your viewport, and `Directory Setup...`. Follow the directions to upgrade your old storage file to a new storage directory. Save afterwards.
-
-
 ### Upgrade Path
 
 While later versions of Terrain3D can generally open previous versions, not all data will be transfered unless the supported upgrade path is followed. We occasionally deprecate or rename classes and provide upgrade paths to convert data for a limited time. 
@@ -70,6 +67,7 @@ If upgrading from a very old version, you may need to go through multiple steps 
 
 | Starting Version | Can Upgrade w/ Data Conversion |
 |------------------|-------------------|
+| 0.9.3 | 1.0.0 |
 | 0.9.2 | 0.9.3* |
 | 0.9.1 | 0.9.2 - 0.9.3* |
 | 0.9.0 | 0.9.2 - 0.9.3* |

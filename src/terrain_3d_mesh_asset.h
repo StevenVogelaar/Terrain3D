@@ -1,4 +1,4 @@
-// Copyright © 2024 Cory Petkovsek, Roope Palmroos, and Contributors.
+// Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
 #ifndef TERRAIN3D_MESH_ASSET_CLASS_H
 #define TERRAIN3D_MESH_ASSET_CLASS_H
@@ -29,7 +29,7 @@ public:
 private:
 	// Saved data
 	real_t _height_offset = 0.f;
-	real_t _visibility_range = 1024.f;
+	real_t _visibility_range = 100.f;
 	real_t _visibility_margin = 0.f;
 	GeometryInstance3D::ShadowCastingSetting _cast_shadows = GeometryInstance3D::SHADOW_CASTING_SETTING_ON;
 	GenType _generated_type = TYPE_NONE;
@@ -37,8 +37,7 @@ private:
 	Vector2 _generated_size = Vector2(1.f, 1.f);
 	Ref<PackedScene> _packed_scene;
 	Ref<Material> _material_override;
-	real_t _relative_density = -1.f;
-	real_t _calculated_density = -1.f;
+	real_t _density = 10.f;
 
 	// Working data
 	TypedArray<Mesh> _meshes;
@@ -65,7 +64,7 @@ public:
 	void set_height_offset(const real_t p_offset);
 	real_t get_height_offset() const { return _height_offset; }
 	void set_density(const real_t p_density);
-	real_t get_density() const;
+	real_t get_density() const { return _density; }
 
 	void set_visibility_range(const real_t p_visibility_range);
 	real_t get_visibility_range() const { return _visibility_range; };

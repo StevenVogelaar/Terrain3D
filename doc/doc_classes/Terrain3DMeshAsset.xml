@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="Terrain3DMeshAsset" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+<class name="Terrain3DMeshAsset" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
 	</brief_description>
 	<description>
@@ -41,7 +41,7 @@
 		<member name="cast_shadows" type="int" setter="set_cast_shadows" getter="get_cast_shadows" enum="GeometryInstance3D.ShadowCastingSetting" default="1">
 			Tells the renderer how to cast shadows from this mesh asset onto the terrain and other objects. This sets [code skip-lint]GeometryInstance3D.cast_shadow[/code] on all MultiMeshInstances used by this mesh.
 		</member>
-		<member name="density" type="float" setter="set_density" getter="get_density" default="-1.0">
+		<member name="density" type="float" setter="set_density" getter="get_density" default="10.0">
 			Density is used to set the approximate default spacing between instances based on the size of the mesh. When painting meshes on the terrain, mesh density is multiplied by brush strength.
 			This value is not tied to any real world unit. It is calculated as [code skip-lint]10.f / mesh-&gt;get_aabb().get_volume()[/code], then clamped to a sane range. If the calculated amount is inappropriate, increase or decrease it here.
 		</member>
@@ -69,7 +69,7 @@
 		<member name="scene_file" type="PackedScene" setter="set_scene_file" getter="get_scene_file">
 			A packed scene to load the mesh from. See the top description.
 		</member>
-		<member name="visibility_range" type="float" setter="set_visibility_range" getter="get_visibility_range" default="1024.0">
+		<member name="visibility_range" type="float" setter="set_visibility_range" getter="get_visibility_range" default="100.0">
 			Sets [code skip-lint]GeometryInstance3D.visibility_range_end[/code] on all MultiMeshInstances used by this mesh. Allows the renderer to cull MMIs beyond this distance. Set to 0 to disable culling.
 		</member>
 	</members>

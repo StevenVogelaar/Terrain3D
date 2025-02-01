@@ -39,9 +39,6 @@
     <ClInclude Include="src\terrain_3d_editor.h">
       <Filter>5. Headers</Filter>
     </ClInclude>
-    <ClInclude Include="src\terrain_3d_storage.h">
-      <Filter>5. Headers</Filter>
-    </ClInclude>
     <ClInclude Include="src\terrain_3d_material.h">
       <Filter>5. Headers</Filter>
     </ClInclude>
@@ -75,6 +72,9 @@
     <ClInclude Include="src\terrain_3d_data.h">
       <Filter>5. Headers</Filter>
     </ClInclude>
+    <ClInclude Include="src\terrain_3d_collision.h">
+      <Filter>5. Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\geoclipmap.cpp">
@@ -87,9 +87,6 @@
       <Filter>6. C++</Filter>
     </ClCompile>
     <ClCompile Include="src\terrain_3d_editor.cpp">
-      <Filter>6. C++</Filter>
-    </ClCompile>
-    <ClCompile Include="src\terrain_3d_storage.cpp">
       <Filter>6. C++</Filter>
     </ClCompile>
     <ClCompile Include="src\terrain_3d_texture_asset.cpp">
@@ -119,11 +116,11 @@
     <ClCompile Include="src\terrain_3d_data.cpp">
       <Filter>6. C++</Filter>
     </ClCompile>
+    <ClCompile Include="src\terrain_3d_collision.cpp">
+      <Filter>6. C++</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include=".github\actions\windows-deps\action.yml">
-      <Filter>1. Project Files</Filter>
-    </None>
     <None Include=".github\actions\build-cache\action.yml">
       <Filter>1. Project Files</Filter>
     </None>
@@ -214,9 +211,6 @@
     <None Include="doc\docs\games.md">
       <Filter>2. Docs</Filter>
     </None>
-    <None Include="doc\docs\misc.md">
-      <Filter>2. Docs</Filter>
-    </None>
     <None Include="doc\docs\instancer.md">
       <Filter>2. Docs</Filter>
     </None>
@@ -241,6 +235,15 @@
     <None Include="doc\docs\introduction.md">
       <Filter>2. Docs</Filter>
     </None>
+    <None Include=".github\workflows\web.yml">
+      <Filter>1. Project Files</Filter>
+    </None>
+    <None Include="project\addons\terrain_3d\extras\minimum.gdshader">
+      <Filter>4. Shaders</Filter>
+    </None>
+    <None Include="doc\docs\heightmaps.md">
+      <Filter>2. Docs</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include=".readthedocs.yaml">
@@ -259,9 +262,6 @@
       <Filter>2. Docs</Filter>
     </Text>
     <Text Include="doc\docs\occlusion_culling.md">
-      <Filter>2. Docs</Filter>
-    </Text>
-    <Text Include="doc\docs\project_status.md">
       <Filter>2. Docs</Filter>
     </Text>
     <Text Include="doc\docs\shader_design.md">
@@ -305,43 +305,37 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="doc\classes\Terrain3D.xml">
+    <Xml Include="doc\doc_classes\Terrain3D.xml">
       <Filter>3. XML</Filter>
     </Xml>
-    <Xml Include="doc\classes\Terrain3DEditor.xml">
+    <Xml Include="doc\doc_classes\Terrain3DAssets.xml">
       <Filter>3. XML</Filter>
     </Xml>
-    <Xml Include="doc\classes\Terrain3DMaterial.xml">
+    <Xml Include="doc\doc_classes\Terrain3DData.xml">
       <Filter>3. XML</Filter>
     </Xml>
-    <Xml Include="doc\classes\Terrain3DStorage.xml">
+    <Xml Include="doc\doc_classes\Terrain3DEditor.xml">
       <Filter>3. XML</Filter>
     </Xml>
-    <Xml Include="doc\classes\Terrain3DTextureAsset.xml">
+    <Xml Include="doc\doc_classes\Terrain3DInstancer.xml">
       <Filter>3. XML</Filter>
     </Xml>
-    <Xml Include="doc\classes\Terrain3DAssets.xml">
+    <Xml Include="doc\doc_classes\Terrain3DMaterial.xml">
       <Filter>3. XML</Filter>
     </Xml>
-    <Xml Include="doc\classes\Terrain3DUtil.xml">
+    <Xml Include="doc\doc_classes\Terrain3DMeshAsset.xml">
       <Filter>3. XML</Filter>
     </Xml>
-    <Xml Include="doc\classes\Terrain3DInstancer.xml">
+    <Xml Include="doc\doc_classes\Terrain3DRegion.xml">
       <Filter>3. XML</Filter>
     </Xml>
-    <Xml Include="doc\classes\Terrain3DTextureList.xml">
+    <Xml Include="doc\doc_classes\Terrain3DTextureAsset.xml">
       <Filter>3. XML</Filter>
     </Xml>
-    <Xml Include="doc\classes\Terrain3DMeshAsset.xml">
+    <Xml Include="doc\doc_classes\Terrain3DUtil.xml">
       <Filter>3. XML</Filter>
     </Xml>
-    <Xml Include="doc\classes\Terrain3DTexture.xml">
-      <Filter>3. XML</Filter>
-    </Xml>
-    <Xml Include="doc\classes\Terrain3DData.xml">
-      <Filter>3. XML</Filter>
-    </Xml>
-    <Xml Include="doc\classes\Terrain3DRegion.xml">
+    <Xml Include="doc\doc_classes\Terrain3DCollision.xml">
       <Filter>3. XML</Filter>
     </Xml>
   </ItemGroup>

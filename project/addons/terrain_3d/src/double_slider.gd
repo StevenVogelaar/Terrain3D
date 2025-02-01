@@ -1,3 +1,6 @@
+# Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
+# DoubleSlider for Terrain3D
+# Should work for other UIs
 @tool
 class_name DoubleSlider
 extends Control

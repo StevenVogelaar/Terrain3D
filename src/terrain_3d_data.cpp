@@ -1,4 +1,4 @@
-// Copyright © 2024 Cory Petkovsek, Roope Palmroos, and Contributors.
+// Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/editor_file_system.hpp>
@@ -911,14 +911,18 @@ void Terrain3DData::import_images(const TypedArray<Image> &p_images, const Vecto
 			continue;
 		}
 
-		// Apply scale and offsets to a new heightmap if applicable
-		if (i == TYPE_HEIGHT && (p_offset != 0.f || p_scale != 1.f)) {
+		// Apply scale and offsets to the heightmap and filter out invalid data
+		if (i == TYPE_HEIGHT) {
 			LOG(DEBUG, "Creating new temp image to adjust scale: ", p_scale, " offset: ", p_offset);
-			Ref<Image> newimg = Image::create(img->get_size().x, img->get_size().y, false, FORMAT[TYPE_HEIGHT]);
+			Ref<Image> newimg = Image::create_empty(img->get_size().x, img->get_size().y, false, FORMAT[TYPE_HEIGHT]);
 			for (int y = 0; y < img->get_height(); y++) {
 				for (int x = 0; x < img->get_width(); x++) {
 					Color clr = img->get_pixel(x, y);
-					clr.r = (clr.r * p_scale) + p_offset;
+					if (std::isnormal(clr.r)) {
+						clr.r = (clr.r * p_scale) + p_offset;
+					} else {
+						clr.r = p_offset;
+					}
 					newimg->set_pixel(x, y, clr);
 				}
 			}
@@ -936,7 +940,7 @@ void Terrain3DData::import_images(const TypedArray<Image> &p_images, const Vecto
 	for (int y = 0; y < slices_height; y++) {
 		for (int x = 0; x < slices_width; x++) {
 			Vector2i start_coords = Vector2i(x * _region_size, y * _region_size);
-			Vector2i end_coords = Vector2i((x + 1) * _region_size, (y + 1) * _region_size);
+			Vector2i end_coords = Vector2i((x + 1) * _region_size - 1, (y + 1) * _region_size - 1);
 			LOG(DEBUG, "Reviewing image section ", start_coords, " to ", end_coords);
 
 			Vector2i size_to_copy;
@@ -1172,9 +1176,9 @@ void Terrain3DData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("remove_region", "region", "update"), &Terrain3DData::remove_region, DEFVAL(true));
 
 	ClassDB::bind_method(D_METHOD("save_directory", "directory"), &Terrain3DData::save_directory);
-	ClassDB::bind_method(D_METHOD("save_region", "directory", "region_location", "16_bit"), &Terrain3DData::save_region, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("save_region", "region_location", "directory", "16_bit"), &Terrain3DData::save_region, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("load_directory", "directory"), &Terrain3DData::load_directory);
-	ClassDB::bind_method(D_METHOD("load_region", "directory", "region_location", "update"), &Terrain3DData::load_region, DEFVAL(true));
+	ClassDB::bind_method(D_METHOD("load_region", "region_location", "directory", "update"), &Terrain3DData::load_region, DEFVAL(true));
 
 	ClassDB::bind_method(D_METHOD("get_height_maps"), &Terrain3DData::get_height_maps);
 	ClassDB::bind_method(D_METHOD("get_control_maps"), &Terrain3DData::get_control_maps);

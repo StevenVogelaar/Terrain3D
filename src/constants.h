@@ -1,4 +1,4 @@
-// Copyright © 2024 Cory Petkovsek, Roope Palmroos, and Contributors.
+// Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
 #ifndef CONSTANTS_CLASS_H
 #define CONSTANTS_CLASS_H
@@ -8,6 +8,7 @@ using namespace godot;
 // Constants
 
 #define RS RenderingServer::get_singleton()
+#define PS PhysicsServer3D::get_singleton()
 #define IS_EDITOR Engine::get_singleton()->is_editor_hint()
 
 #define COLOR_NAN Color(NAN, NAN, NAN, NAN)
@@ -19,19 +20,30 @@ using namespace godot;
 #define COLOR_CONTROL Color(as_float(enc_auto(true)), 0.f, 0.f, 1.0f)
 #define COLOR_GRASS Color(as_float(enc_auto(true)), 0.f, 0.f, 1.0f)
 
-#ifndef FLT_MAX
 // For consistency between MSVC, gcc, clang
+#ifndef FLT_MAX
 #define FLT_MAX __FLT_MAX__
+#endif
+#ifndef FLT_MIN
+#define FLT_MIN __FLT_MIN__
 #endif
 
 #define V2(x) Vector2(x, x)
+#define V2I(x) Vector2i(x, x)
 #define V2_ZERO Vector2(0.f, 0.f)
 #define V2I_ZERO Vector2i(0, 0)
 #define V2_MAX Vector2(FLT_MAX, FLT_MAX)
 #define V2I_MAX Vector2i(INT32_MAX, INT32_MAX)
 #define V3(x) Vector3(x, x, x)
+#define V3_(x) Vector3(x, 0.f, x)
 #define V3_ZERO Vector3(0.f, 0.f, 0.f)
 #define V3_MAX Vector3(FLT_MAX, FLT_MAX, FLT_MAX)
+
+// Terrain3D::_warnings is uint8_t
+#define WARN_MISMATCHED_SIZE 0x01
+#define WARN_MISMATCHED_FORMAT 0x02
+#define WARN_MISMATCHED_MIPMAPS 0x04
+#define WARN_ALL 0xFF
 
 // Set class name for logger.h
 
@@ -41,6 +53,12 @@ using namespace godot;
 #define CLASS_NAME_STATIC(p_name) static inline const char *__class__ = p_name;
 
 // Validation macros
+
+#define ASSERT(cond, ret)                                                                            \
+	if (!(cond)) {                                                                                   \
+		UtilityFunctions::push_error("Assertion '", #cond, "' failed at ", __FILE__, ":", __LINE__); \
+		return ret;                                                                                  \
+	}
 
 #define VOID // a return value for void, to avoid compiler warnings
 

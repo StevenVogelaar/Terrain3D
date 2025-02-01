@@ -1,6 +1,7 @@
+# Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
+# Asset Dock for Terrain3D
 @tool
 extends PanelContainer
-#class_name Terrain3DAssetDock
 
 signal confirmation_closed
 signal confirmation_confirmed
@@ -588,13 +589,9 @@ class ListContainer extends Container:
 				last_offset = 3
 			set_selected_id(clamp(selected_id, 0, entries.size() - last_offset))
 
-		# Update editor with selected brush
-		plugin.ui._on_setting_changed()
-
 
 	func get_selected_id() -> int:
 		return selected_id
-
 
 
 	func set_entry_width(value: float) -> void:
@@ -791,8 +788,8 @@ class ListEntry extends VBoxContainer:
 				var ma := Terrain3DMeshAsset.new()
 				if resource is Terrain3DMeshAsset:
 					ma.id = resource.id
-				ma.set_scene_file(res)
 				set_edited_resource(ma, false)
+				ma.set_scene_file(res)
 				resource = ma
 			elif res is Terrain3DMeshAsset and type == Terrain3DAssets.TYPE_MESH:
 				if resource is Terrain3DMeshAsset:

@@ -1,4 +1,4 @@
-// Copyright © 2024 Cory Petkovsek, Roope Palmroos, and Contributors.
+// Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
 #include <godot_cpp/classes/resource_saver.hpp>
 
@@ -315,30 +315,6 @@ void Terrain3DInstancer::initialize(Terrain3D *p_terrain) {
 	}
 	IS_DATA_INIT_MESG("Terrain3D not initialized yet", VOID);
 	LOG(INFO, "Initializing Instancer");
-
-	{ // DEPRECATED 0.9.3 - Remove 1.0
-		// This block upgrades 0.9.3-dev multimeshes to _instances
-		bool upgraded = false;
-		TypedArray<Terrain3DRegion> regions = _terrain->get_data()->get_regions_active();
-		for (int i = 0; i < regions.size(); i++) {
-			Ref<Terrain3DRegion> region = regions[i];
-			if (!region->get_multimeshes().is_empty()) {
-				Dictionary mesh_dict = region->get_multimeshes();
-				// Dictionary[mesh_id:int] -> MultiMesh
-				Array mkeys = mesh_dict.keys();
-				for (int j = 0; j < mkeys.size(); j++) {
-					int mesh_id = mkeys[j];
-					add_multimesh(mesh_id, mesh_dict[mesh_id], Transform3D(), false);
-					upgraded = true;
-				}
-				mesh_dict.clear();
-			}
-		}
-		if (upgraded) {
-			LOG(WARN, "Upgrading v0.9.3-dev instancer data. Save to write changes to disk.");
-		}
-	}
-
 	_update_mmis();
 }
 
@@ -775,19 +751,22 @@ void Terrain3DInstancer::append_region(const Ref<Terrain3DRegion> &p_region, con
 // Review all transforms in one area and adjust their transforms w/ the current height
 void Terrain3DInstancer::update_transforms(const AABB &p_aabb) {
 	IS_DATA_INIT_MESG("Instancer isn't initialized.", VOID);
-	Rect2 brush_rect = aabb2rect(p_aabb);
-	Vector2 global_position = brush_rect.get_center();
-	Vector2 size = brush_rect.get_size();
-	Vector2 half_size = size * 0.5 + Vector2(1.f, 1.f); // 1m margin
+	Rect2 rect = aabb2rect(p_aabb);
+	LOG(EXTREME, "Updating transforms within ", rect);
+	Vector2 global_position = rect.get_center();
+	Vector2 size = rect.get_size();
+	Vector2 half_size = size * 0.5f + Vector2(1.f, 1.f); // 1m margin
+	if (size == V2_ZERO) {
+		return;
+	}
 
 	Terrain3DData *data = _terrain->get_data();
 	int region_size = _terrain->get_region_size();
 	real_t vertex_spacing = _terrain->get_vertex_spacing();
 
-	// Build list of potential regions to search, rather than searching the entire terrain, calculate possible regions covered
-	// and check if they are valid; if so add that location to the dictionary keys.
+	// Build list of valid regions within AABB; add the locations as dictionary keys.
 	Dictionary r_locs;
-	// Calculate step distance to ensure every region is checked inside the bounds of brush size.
+	// Calculate step distance to ensure every region is checked inside the bounds of AABB size.
 	Vector2 step = Vector2(size.x / ceil(size.x / real_t(region_size) / vertex_spacing), size.y / ceil(size.y / real_t(region_size) / vertex_spacing));
 	for (real_t x = global_position.x - half_size.x; x <= global_position.x + half_size.x; x += step.x) {
 		for (real_t z = global_position.y - half_size.y; z <= global_position.y + half_size.y; z += step.y) {
@@ -845,7 +824,7 @@ void Terrain3DInstancer::update_transforms(const AABB &p_aabb) {
 			if (cell_queue.size() == 0) {
 				continue;
 			}
-			Ref<Terrain3DMeshAsset> mesh_asset = _terrain->get_assets()->get_mesh_asset(m);
+			Ref<Terrain3DMeshAsset> mesh_asset = _terrain->get_assets()->get_mesh_asset(mesh_types[m]);
 			real_t mesh_height_offset = mesh_asset->get_height_offset();
 			for (int c = 0; c < cell_queue.size(); c++) {
 				Vector2i cell = cell_queue[c];
@@ -856,15 +835,18 @@ void Terrain3DInstancer::update_transforms(const AABB &p_aabb) {
 				PackedColorArray updated_colors;
 				for (int i = 0; i < xforms.size(); i++) {
 					Transform3D t = xforms[i];
-					Vector3 height_offset = t.basis.get_column(1) * mesh_height_offset;
-					t.origin -= height_offset;
-					real_t height = _terrain->get_data()->get_height(t.origin + global_local_offset);
-					// If the new height is a nan due to creating a hole, remove the instance
-					if (std::isnan(height)) {
-						continue;
+					Vector3 global_origin(t.origin + global_local_offset);
+					if (rect.has_point(Vector2(global_origin.x, global_origin.z))) {
+						Vector3 height_offset = t.basis.get_column(1) * mesh_height_offset;
+						t.origin -= height_offset;
+						real_t height = _terrain->get_data()->get_height(global_origin);
+						// If the new height is a nan due to creating a hole, remove the instance
+						if (std::isnan(height)) {
+							continue;
+						}
+						t.origin.y = height;
+						t.origin += height_offset;
 					}
-					t.origin.y = height;
-					t.origin += height_offset;
 					updated_xforms.push_back(t);
 					updated_colors.push_back(colors[i]);
 				}
