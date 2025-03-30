@@ -493,9 +493,11 @@ void Terrain3DMaterial::_update_maps() {
 	RS->material_set_param(_material, "_height_maps", data->get_height_maps_rid());
 	RS->material_set_param(_material, "_control_maps", data->get_control_maps_rid());
 	RS->material_set_param(_material, "_color_maps", data->get_color_maps_rid());
+	RS->material_set_param(_material, "_grass_maps", data->get_grass_maps_rid());
 	LOG(EXTREME, "Height map RID: ", data->get_height_maps_rid());
 	LOG(EXTREME, "Control map RID: ", data->get_control_maps_rid());
 	LOG(EXTREME, "Color map RID: ", data->get_color_maps_rid());
+	LOG(EXTREME, "Grass map RID: ", data->get_grass_maps_rid());
 
 	real_t spacing = _terrain->get_vertex_spacing();
 	LOG(EXTREME, "Setting vertex spacing in material: ", spacing);

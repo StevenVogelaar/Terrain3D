@@ -148,6 +148,8 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 
 	real_t gamma = _brush_data["gamma"];
 	PackedVector3Array gradient_points = _brush_data["gradient_points"];
+	real_t grass_height = _brush_data["grass_height"];
+	bool ground_1 = _brush_data["ground_1"];
 
 	real_t randf = UtilityFunctions::randf();
 	real_t rot = randf * Math_PI * real_t(_brush_data["jitter"]);
@@ -511,6 +513,39 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 					default:
 						break;
 				}
+			} 	else if (map_type == TYPE_GRASS){
+
+				real_t grass = real_t(get_grass(src.r)) / 255.f;
+				bool ground_1_tex = is_ground_1(src.r);
+
+				switch (_tool) {
+						case GRASS:
+							if (ground_1){
+								if (grass_height < 0.5f){
+									ground_1_tex = false;
+								}
+								else {
+									ground_1_tex = true;
+								}
+							}
+							else {
+								switch (_operation){
+									case ADD:
+										grass = Math::lerp(grass, grass_height, strength * brush_alpha);
+									break;
+								}
+							}
+						break;
+					default:
+						break;
+				}
+
+				// Convert back to bitfield
+				uint32_t grass_int = uint32_t(CLAMP(Math::round(grass * 255.f), 0.f, 255.f));
+				uint32_t bits = enc_grass(uint8_t(grass * 255.f)) | enc_ground_1(ground_1_tex);
+
+				// Write back to pixel in FORMAT_RF. Must be a 32-bit float
+				dest = Color(as_float(bits), 0.f, 0.f, 1.f);
 			}
 			backup_region(region);
 			map->set_pixelv(map_pixel_position, dest);
@@ -738,6 +773,8 @@ void Terrain3DEditor::set_brush_data(const Dictionary &p_data) {
 	_brush_data["gamma"] = CLAMP(real_t(p_data.get("gamma", 1.f)), 0.1f, 2.f);
 	_brush_data["jitter"] = CLAMP(real_t(p_data.get("jitter", 0.f)), 0.f, 1.f);
 	_brush_data["gradient_points"] = p_data.get("gradient_points", PackedVector3Array());
+	_brush_data["grass_height"] = CLAMP(real_t(p_data.get("grass_height", 100.f)), 0.f, 100.f) * 0.01f; // Percentage
+	_brush_data["ground_1"] = p_data.get("ground_1", false);
 
 	Util::print_dict("set_brush_data() Santized brush data:", _brush_data, EXTREME);
 }
@@ -820,7 +857,9 @@ void Terrain3DEditor::stop_operation() {
 			// Make duplicate for redo backup
 			_edited_regions[i] = region->duplicate(true);
 		}
-		_store_undo();
+		if (IS_EDITOR){
+			_store_undo();
+		}
 	}
 	_undo_data.clear();
 	_original_regions = TypedArray<Terrain3DRegion>(); //New pointers instead of clear
@@ -846,6 +885,7 @@ void Terrain3DEditor::_bind_methods() {
 	BIND_ENUM_CONSTANT(HEIGHT);
 	BIND_ENUM_CONSTANT(TEXTURE);
 	BIND_ENUM_CONSTANT(COLOR);
+	BIND_ENUM_CONSTANT(GRASS);
 	BIND_ENUM_CONSTANT(ROUGHNESS);
 	BIND_ENUM_CONSTANT(ANGLE);
 	BIND_ENUM_CONSTANT(SCALE);

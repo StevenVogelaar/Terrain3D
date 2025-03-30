@@ -17,6 +17,7 @@ public: // Constants
 		TYPE_HEIGHT,
 		TYPE_CONTROL,
 		TYPE_COLOR,
+		TYPE_GRASS,
 		TYPE_MAX,
 	};
 
@@ -24,6 +25,7 @@ public: // Constants
 		Image::FORMAT_RF, // TYPE_HEIGHT
 		Image::FORMAT_RF, // TYPE_CONTROL
 		Image::FORMAT_RGBA8, // TYPE_COLOR
+		Image::FORMAT_RF, // TYPE_GRASS
 		Image::Format(TYPE_MAX), // Proper size of array instead of FORMAT_MAX
 	};
 
@@ -31,6 +33,7 @@ public: // Constants
 		"TYPE_HEIGHT",
 		"TYPE_CONTROL",
 		"TYPE_COLOR",
+		"TYPE_GRASS",
 		"TYPE_MAX",
 	};
 
@@ -38,6 +41,7 @@ public: // Constants
 		COLOR_BLACK, // TYPE_HEIGHT
 		COLOR_CONTROL, // TYPE_CONTROL
 		COLOR_ROUGHNESS, // TYPE_COLOR
+		COLOR_GRASS, // TYPE_GRASS
 		COLOR_NAN, // TYPE_MAX, unused just in case someone indexes the array
 	};
 
@@ -50,6 +54,7 @@ private:
 	Ref<Image> _height_map;
 	Ref<Image> _control_map;
 	Ref<Image> _color_map;
+	Ref<Image> _grass_map;
 	// Instancer
 	Dictionary _instances; // Meshes{int} -> Cells{v2i} -> [ Transform3D, Color, Modified ]
 	real_t _vertex_spacing = 1.f; // Vertex Spacing value that transforms are currently scaled.
@@ -81,6 +86,8 @@ public:
 	Ref<Image> get_control_map() const { return _control_map; }
 	void set_color_map(const Ref<Image> &p_map);
 	Ref<Image> get_color_map() const { return _color_map; }
+	void set_grass_map(const Ref<Image> &p_map);
+	Ref<Image> get_grass_map() const { return _grass_map; }
 	void sanitize_maps();
 	Ref<Image> sanitize_map(const MapType p_map_type, const Ref<Image> &p_map) const;
 	bool validate_map_size(const Ref<Image> &p_map) const;
@@ -124,6 +131,7 @@ VARIANT_ENUM_CAST(Terrain3DRegion::MapType);
 constexpr Terrain3DRegion::MapType TYPE_HEIGHT = Terrain3DRegion::MapType::TYPE_HEIGHT;
 constexpr Terrain3DRegion::MapType TYPE_CONTROL = Terrain3DRegion::MapType::TYPE_CONTROL;
 constexpr Terrain3DRegion::MapType TYPE_COLOR = Terrain3DRegion::MapType::TYPE_COLOR;
+constexpr Terrain3DRegion::MapType TYPE_GRASS = Terrain3DRegion::MapType::TYPE_GRASS;
 constexpr Terrain3DRegion::MapType TYPE_MAX = Terrain3DRegion::MapType::TYPE_MAX;
 constexpr inline const Image::Format *FORMAT = Terrain3DRegion::FORMAT;
 constexpr inline const char **TYPESTR = Terrain3DRegion::TYPESTR;

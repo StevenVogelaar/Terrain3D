@@ -18,6 +18,7 @@ using namespace godot;
 #define COLOR_CHECKED Color(1.f, 1.f, 1.0f, -1.0f)
 #define COLOR_NORMAL Color(0.5f, 0.5f, 1.0f, 1.0f)
 #define COLOR_CONTROL Color(as_float(enc_auto(true)), 0.f, 0.f, 1.0f)
+#define COLOR_GRASS Color(as_float(enc_auto(true)), 0.f, 0.f, 1.0f)
 
 // For consistency between MSVC, gcc, clang
 #ifndef FLT_MAX

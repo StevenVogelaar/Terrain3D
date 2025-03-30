@@ -244,6 +244,14 @@ inline bool is_auto(const float p_pixel) { return is_auto(as_uint(p_pixel)); }
 inline uint32_t enc_auto(const bool p_auto) { return p_auto & 0x1; }
 inline bool gd_is_auto(const uint32_t p_pixel) { return is_auto(p_pixel); }
 
+inline uint8_t get_grass(const uint32_t p_pixel) { return p_pixel & 0xFF; }
+inline uint8_t get_grass(const float p_pixel) { return get_grass(as_uint(p_pixel)); }
+inline uint32_t enc_grass(const uint8_t p_grass) { return p_grass & 0xFF; }
+
+inline bool is_ground_1(const uint32_t p_pixel) { return (p_pixel >> 8 & 0x1) == 1; }
+inline bool is_ground_1(const float p_pixel) { return is_ground_1(as_uint(p_pixel)); }
+inline uint32_t enc_ground_1(const bool p_ground_1) { return (p_ground_1 & 0x1) << 8; }
+
 ///////////////////////////
 // Memory
 ///////////////////////////

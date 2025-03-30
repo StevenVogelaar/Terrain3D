@@ -86,6 +86,11 @@ func _ready() -> void:
 	add_setting({ "name":"roughness_picker", "type":SettingType.PICKER, "list":main_list, 
 								"default":Terrain3DEditor.ROUGHNESS, "flags":NO_LABEL })
 
+	add_setting({ "name":"grass_height", "type":SettingType.SLIDER, "list":main_list, "default":100,
+								"unit":"%", "range":Vector3(0, 100, 1), "flags":ADD_SEPARATOR })
+	add_setting({ "name":"ground_1", "type":SettingType.CHECKBOX, "list":main_list,
+								"default":false })
+
 	add_setting({ "name":"enable_texture", "label":"Texture", "type":SettingType.CHECKBOX, 
 								"list":main_list, "default":true, "flags":ADD_SEPARATOR })
 

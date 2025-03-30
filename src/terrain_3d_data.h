@@ -17,7 +17,7 @@ class Terrain3DData : public Object {
 	friend Terrain3D;
 
 public: // Constants
-	static inline const real_t CURRENT_VERSION = 0.93f;
+	static inline const real_t CURRENT_VERSION = 0.94f;
 	static inline const int REGION_MAP_SIZE = 32;
 	static inline const Vector2i REGION_MAP_VSIZE = Vector2i(REGION_MAP_SIZE, REGION_MAP_SIZE);
 
@@ -62,6 +62,7 @@ private:
 	TypedArray<Image> _height_maps;
 	TypedArray<Image> _control_maps;
 	TypedArray<Image> _color_maps;
+	TypedArray<Image> _grass_maps;
 
 	// Editing occurs on the Image arrays above, which are converted to Texture arrays
 	// below for the shader.
@@ -74,6 +75,7 @@ private:
 	GeneratedTexture _generated_height_maps;
 	GeneratedTexture _generated_control_maps;
 	GeneratedTexture _generated_color_maps;
+	GeneratedTexture _generated_grass_maps;
 
 	// Functions
 	void _clear();
@@ -129,17 +131,21 @@ public:
 	TypedArray<Image> get_height_maps() const { return _height_maps; }
 	TypedArray<Image> get_control_maps() const { return _control_maps; }
 	TypedArray<Image> get_color_maps() const { return _color_maps; }
+	TypedArray<Image> get_grass_maps() const { return _grass_maps; }
 	TypedArray<Image> get_maps(const MapType p_map_type) const;
 	void update_maps(const MapType p_map_type = TYPE_MAX, const bool p_all_regions = true, const bool p_generate_mipmaps = false);
 	RID get_height_maps_rid() const { return _generated_height_maps.get_rid(); }
 	RID get_control_maps_rid() const { return _generated_control_maps.get_rid(); }
 	RID get_color_maps_rid() const { return _generated_color_maps.get_rid(); }
+	RID get_grass_maps_rid() const { return _generated_grass_maps.get_rid(); }
 
 	void set_pixel(const MapType p_map_type, const Vector3 &p_global_position, const Color &p_pixel);
 	Color get_pixel(const MapType p_map_type, const Vector3 &p_global_position) const;
 	void set_height(const Vector3 &p_global_position, const real_t p_height);
 	real_t get_height(const Vector3 &p_global_position) const;
 	void set_color(const Vector3 &p_global_position, const Color &p_color);
+	uint32_t get_grass(const Vector3 &p_global_position) const;
+	void set_grass(const Vector3 &p_global_position, const uint32_t p_grass);
 	Color get_color(const Vector3 &p_global_position) const;
 	void set_control(const Vector3 &p_global_position, const uint32_t p_control);
 	uint32_t get_control(const Vector3 &p_global_position) const;
@@ -255,6 +261,14 @@ inline void Terrain3DData::set_color(const Vector3 &p_global_position, const Col
 	Color clr = p_color;
 	clr.a = get_roughness(p_global_position);
 	set_pixel(TYPE_COLOR, p_global_position, clr);
+}
+inline uint32_t Terrain3DData::get_grass(const Vector3 &p_global_position) const {
+	real_t val = get_pixel(TYPE_GRASS, p_global_position).r;
+	return (std::isnan(val)) ? UINT32_MAX : as_uint(val);
+}
+
+inline void Terrain3DData::set_grass(const Vector3 &p_global_position, const uint32_t p_grass) {
+	set_pixel(TYPE_GRASS, p_global_position, Color(as_float(p_grass), 0.f, 0.f, 1.f));
 }
 
 inline Color Terrain3DData::get_color(const Vector3 &p_global_position) const {

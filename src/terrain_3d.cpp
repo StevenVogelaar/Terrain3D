@@ -16,6 +16,7 @@
 #include <godot_cpp/classes/viewport.hpp>
 #include <godot_cpp/classes/viewport_texture.hpp>
 #include <godot_cpp/classes/world3d.hpp>
+#include <godot_cpp/core/version.hpp>
 
 #include "logger.h"
 #include "terrain_3d.h"
