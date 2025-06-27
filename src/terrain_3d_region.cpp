@@ -64,6 +64,8 @@ Image *Terrain3DRegion::get_map_ptr(const MapType p_map_type) const {
 			return *_control_map;
 		case TYPE_COLOR:
 			return *_color_map;
+		case TYPE_GRASS:
+			return *_grass_map;
 		default:
 			LOG(ERROR, "Requested map type ", p_map_type, ", is invalid");
 			return nullptr;
