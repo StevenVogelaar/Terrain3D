@@ -77,9 +77,9 @@ TypedArray<Terrain3DRegion> Terrain3DData::get_regions_active(const bool p_copy,
 	TypedArray<Terrain3DRegion> region_arr;
 	for (int i = 0; i < _region_locations.size(); i++) {
 		Vector2i region_loc = _region_locations[i];
-		Terrain3DRegion *region = get_region_ptr(region_loc);
-		if (region) {
-			region_arr.push_back((p_copy) ? region->duplicate(p_deep) : region);
+		Ref<Terrain3DRegion> region = get_region(region_loc);
+		if (region.is_valid()) {
+			region_arr.push_back(p_copy ? region->duplicate(p_deep) : region);
 		}
 	}
 	return region_arr;
@@ -126,7 +126,7 @@ void Terrain3DData::change_region_size(int p_new_size) {
 	Dictionary new_region_points;
 	Array locs = _regions.keys();
 	for (int i = 0; i < locs.size(); i++) {
-		Terrain3DRegion *region = get_region_ptr(locs[i]);
+		Terrain3DRegion *region = get_region_ptr(Vector2i(locs[i]));
 		if (region && !region->is_deleted()) {
 			Point2i region_position = region->get_location() * _region_size;
 			Rect2i location_bounds(V2I_DIVIDE_FLOOR(region_position, p_new_size), V2I_DIVIDE_CEIL(_region_sizev, p_new_size));
@@ -500,13 +500,14 @@ void Terrain3DData::update_maps(const MapType p_map_type, const bool p_all_regio
 		Array locs = _regions.keys();
 		int region_id = 0;
 		for (int i = 0; i < locs.size(); i++) {
-			Terrain3DRegion *region = cast_to<Terrain3DRegion>(_regions[locs[i]]);
+			Vector2i region_loc = locs[i];
+			Terrain3DRegion *region = get_region_ptr(region_loc);
 			if (region && !region->is_deleted()) {
 				region_id += 1; // Begin at 1 since 0 = no region
-				int map_index = get_region_map_index(region->get_location());
+				int map_index = get_region_map_index(region_loc);
 				if (map_index >= 0) {
 					_region_map[map_index] = region_id;
-					_region_locations.push_back(region->get_location());
+					_region_locations.push_back(region_loc);
 				}
 			}
 		}
@@ -514,13 +515,13 @@ void Terrain3DData::update_maps(const MapType p_map_type, const bool p_all_regio
 		emit_signal("region_map_changed");
 	}
 
-	// Rebulid height maps if dirty
+	// Rebuild height maps if dirty
 	if (_generated_height_maps.is_dirty()) {
 		LOG(EXTREME, "Regenerating height texture array from regions");
 		_height_maps.clear();
 		for (int i = 0; i < _region_locations.size(); i++) {
 			Vector2i region_loc = _region_locations[i];
-			Terrain3DRegion *region = cast_to<Terrain3DRegion>(_regions[region_loc]);
+			Terrain3DRegion *region = get_region_ptr(region_loc);
 			if (region) {
 				_height_maps.push_back(region->get_height_map());
 			} else {
@@ -541,7 +542,7 @@ void Terrain3DData::update_maps(const MapType p_map_type, const bool p_all_regio
 		_control_maps.clear();
 		for (int i = 0; i < _region_locations.size(); i++) {
 			Vector2i region_loc = _region_locations[i];
-			Terrain3DRegion *region = cast_to<Terrain3DRegion>(_regions[region_loc]);
+			Terrain3DRegion *region = get_region_ptr(region_loc);
 			if (region) {
 				_control_maps.push_back(region->get_control_map());
 			}
@@ -557,7 +558,7 @@ void Terrain3DData::update_maps(const MapType p_map_type, const bool p_all_regio
 		_color_maps.clear();
 		for (int i = 0; i < _region_locations.size(); i++) {
 			Vector2i region_loc = _region_locations[i];
-			Terrain3DRegion *region = cast_to<Terrain3DRegion>(_regions[region_loc]);
+			Terrain3DRegion *region = get_region_ptr(region_loc);
 			if (region) {
 				_color_maps.push_back(region->get_color_map());
 			}
@@ -587,7 +588,7 @@ void Terrain3DData::update_maps(const MapType p_map_type, const bool p_all_regio
 	if (!any_changed) {
 		for (int i = 0; i < _region_locations.size(); i++) {
 			Vector2i region_loc = _region_locations[i];
-			Terrain3DRegion *region = cast_to<Terrain3DRegion>(_regions[region_loc]);
+			Terrain3DRegion *region = get_region_ptr(region_loc);
 			if (region && region->is_edited()) {
 				int region_id = get_region_id(region_loc);
 				switch (p_map_type) {
@@ -1193,7 +1194,7 @@ void Terrain3DData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("remove_region", "region", "update"), &Terrain3DData::remove_region, DEFVAL(true));
 
 	ClassDB::bind_method(D_METHOD("save_directory", "directory"), &Terrain3DData::save_directory);
-	ClassDB::bind_method(D_METHOD("save_region", "region_location", "directory", "16_bit"), &Terrain3DData::save_region, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("save_region", "region_location", "directory", "save_16_bit"), &Terrain3DData::save_region, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("load_directory", "directory"), &Terrain3DData::load_directory);
 	ClassDB::bind_method(D_METHOD("load_region", "region_location", "directory", "update"), &Terrain3DData::load_region, DEFVAL(true));
 
@@ -1202,7 +1203,7 @@ void Terrain3DData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_color_maps"), &Terrain3DData::get_color_maps);
 	ClassDB::bind_method(D_METHOD("get_grass_maps"), &Terrain3DData::get_grass_maps);
 	ClassDB::bind_method(D_METHOD("get_maps", "map_type"), &Terrain3DData::get_maps);
-	ClassDB::bind_method(D_METHOD("update_maps", "map_type", "all_maps ", "generate_mipmaps"), &Terrain3DData::update_maps, DEFVAL(TYPE_MAX), DEFVAL(true), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("update_maps", "map_type", "all_regions", "generate_mipmaps"), &Terrain3DData::update_maps, DEFVAL(TYPE_MAX), DEFVAL(true), DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("get_height_maps_rid"), &Terrain3DData::get_height_maps_rid);
 	ClassDB::bind_method(D_METHOD("get_control_maps_rid"), &Terrain3DData::get_control_maps_rid);
 	ClassDB::bind_method(D_METHOD("get_color_maps_rid"), &Terrain3DData::get_color_maps_rid);
@@ -1249,11 +1250,11 @@ void Terrain3DData::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("layered_to_image", "map_type"), &Terrain3DData::layered_to_image);
 
 	int ro_flags = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY;
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "region_locations", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::VECTOR2, PROPERTY_HINT_NONE), ro_flags), "set_region_locations", "get_region_locations");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "height_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_height_maps");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "control_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_control_maps");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "color_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_color_maps");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "grass_maps", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Image"), ro_flags), "", "get_grass_maps");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "region_locations", PROPERTY_HINT_ARRAY_TYPE, "Vector2i", ro_flags), "set_region_locations", "get_region_locations");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "height_maps", PROPERTY_HINT_ARRAY_TYPE, "Image", ro_flags), "", "get_height_maps");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "control_maps", PROPERTY_HINT_ARRAY_TYPE, "Image", ro_flags), "", "get_control_maps");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "color_maps", PROPERTY_HINT_ARRAY_TYPE, "Image", ro_flags), "", "get_color_maps");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "grass_maps", PROPERTY_HINT_ARRAY_TYPE, "Image", ro_flags), "", "get_grass_maps");
 
 	ADD_SIGNAL(MethodInfo("maps_changed"));
 	ADD_SIGNAL(MethodInfo("region_map_changed"));

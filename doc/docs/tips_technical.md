@@ -1,5 +1,5 @@
-Tips
-======
+Technical Tips
+====================
 
 ## Are Certain Features Supported?
 
@@ -7,27 +7,28 @@ This list are for items that don't already have dedicated pages in the documenta
 
 | Feature | Status | 
 | ------------- | ------------- | 
-| Destructibility | Real-time modification is possible by changing the data and updating the maps and collision. You can sculpt heights, change textures, or make holes. If you want tunnels or caves though you need to add your own meshes or use [Zylann's Voxel Tools](https://github.com/Zylann/godot_voxel).
+| Destructibility | Real-time modification is possible by changing the data and updating the maps and collision. You can sculpt heights, change textures, or make holes. If you want tunnels or caves though you need to add your own meshes or use [Zylann's Voxel Terrain](https://github.com/Zylann/godot_voxel).
 | GPU Sculpting| [Pending](https://github.com/TokisanGames/Terrain3D/issues/174). Currently painting occurs on the CPU in C++. It's reasonably fast, but we have a soft limit of 200 on the brush size, as larger sizes lag.
 | Holes | Holes work for both visual and collision.
-| Jolt | [Godot-Jolt](https://github.com/godot-jolt/godot-jolt) works as a drop-in replacement for Godot Physics. Collision is generated where regions are defined.
+| Jolt | [Godot-Jolt](https://github.com/godot-jolt/godot-jolt) was merged into Godot. Terrain3D works with both Godot and Jolt physics. Collision is generated where regions are defined.
 | Non-destructive layers | Used for things like river beds, roads or paths that follow a curve and tweak the terrain. It's [possible](https://github.com/TokisanGames/Terrain3D/issues/129) in the future.
 | Object placement | The [instancer](instancer.md) supports placing foliage. Placing objects that shouldn't be in a MultiMeshInstance node is [out of scope](https://github.com/TokisanGames/Terrain3D/issues/47). See 3rd party tools below.
-| Streaming | Streaming is not yet supported by Godot or Terrain3D. In the future we will stream regions.
-| Water | Use [WaterWays](https://github.com/Arnklit/Waterways) for rivers, or [Realistic Water Shader](https://github.com/godot-extended-libraries/godot-realistic-water/) or [Infinite Ocean](https://stayathomedev.com/tutorials/making-an-infinite-ocean-in-godot-4/) for lakes or oceans.
+| Streaming | There is no streaming built in to Godot. Region Streaming is [in progress](https://github.com/TokisanGames/Terrain3D/pull/675).
+| Roads | Look at [Godot Road Generator](https://github.com/TheDuckCow/godot-road-generator/).
+| Water | Use [WaterWays](https://github.com/Arnklit/Waterways) for rivers, or [Realistic Water Shader](https://github.com/godot-extended-libraries/godot-realistic-water/) or [Infinite Ocean](https://stayathomedev.com/tutorials/general-tutorials/infinite-ocean) for lakes or oceans.
 |**Rendering**|
 | Frustum Culling | The terrain is made up of several meshes, so half can be culled if the camera is near the ground.
 | SDFGI | Works fine.
 | VoxelGI | Works fine.
 | Lightmaps | Not possible. There is no static mesh, nor UV2 channel to bake lightmaps on to.
 | **3rd Party Tools** |
-| [Scatter](https://github.com/HungryProton/scatter) | For placing objects algorithmically, with or without collision. We provide [a script](https://github.com/TokisanGames/Terrain3D/blob/main/project/addons/terrain_3d/extras/project_on_terrain3d.gd) that allows Scatter to detect our terrain. Or you can change collision mode to `Full / Editor` and use the default `Project on Colliders`.
-| [AssetPlacer](https://cookiebadger.itch.io/assetplacer) | A level design tool for placing assets manually. Works on Terrain3D with placement mode set to Terrain3D or using the default mode and collision mode set to `Full / Editor`.
+| [Scatter](https://github.com/HungryProton/scatter) | For placing MeshInstance3D objects algorithmically, with or without collision. We provide [a script](https://github.com/TokisanGames/Terrain3D/blob/main/project/addons/terrain_3d/extras/3rd_party/project_on_terrain3d.gd) that allows Scatter to detect our terrain. Or you can change collision mode to `Full / Editor` and use the default `Project on Colliders`. Don't use for MultiMeshInstances, use our built in system.
+| [AssetPlacer](https://cookiebadger.itch.io/assetplacer) | A level design tool for placing MeshInstance3D assets manually. Works on Terrain3D with placement mode set to Terrain3D or using the default mode and collision mode set to `Full / Editor`.
 
 
 ## Regions
 
-Outside of regions, there is no collision. Raycasts won't hit anything. Querying terrain heights or other data will result in NANs or INF. Look through the API for specific return values.
+Outside of regions, there is no collision. Raycasts won't hit anything. Querying terrain heights or other data will result in NANs or INF. Look through the API for specific return values. See [Collision] for more.
 
 You can determine if a given location is within a region by using `Terrain3DData.has_regionp(global_position)`. It will return -1 if the XZ location is not within a region. Y is ignored.
 
@@ -52,18 +53,33 @@ To use it:
     * Set `WorldBackground` to `Flat` or `None`
 	* Disable `Auto Shader`
 	* Disable `Dual Scaling`
-* `WorldBackground` as `Noise` exposes additional shader settings, such as octaves and LOD. You can adjust these settings for performance. However this world generating noise is expensive. Consider not using it at all in a commercial game, and instead obscure your background with meshes, or use an HDR skybox.
+* `WorldBackground` as `Noise` exposes additional shader settings, such as octaves and LOD. You can adjust these settings for performance. However this world generating noise is expensive. Consider not using it at all in a commercial game, and instead obscure your background with meshes, or use an HDR skybox with mountains built in.
 * Reduce the size of the mesh and levels of detail by reducing `Mesh/Size` (`mesh_size`) or `Mesh/Lods` (`mesh_lods`) in the `Terrain3D` node.
-* Don't use `Terrain3D/Renderer/Cull Margin`. It should only be needed if using the noise background. Otherwise the AABB should be correctly calculated via editing, so there is no need to expand the cull margin. Keeping it enabled can cost more processing time.
+* Don't use `Renderer/Cull Margin`. It should only be needed if using the noise background. Otherwise the AABB should be correctly calculated via editing, so there is no need to expand the cull margin. Keeping it enabled can cost more processing time.
+* Experiment with `Renderer/free_editor_textures`, which is enabled by default. It saves VRAM by removing the initial textures used to generate the texture arrays.
+* For cases where performance is paramount, an example `lightweight` shader is provided in `extras/shaders`. This shader is designed to do the minimum possible amount of texture lookups, whilst still providing basic texturing, including height blending. Normals are also fully calculated in `vertex()`. This shader removes advanced features like projection, detiling, and paintable rotation and scale for significant performance gains on low-end hardware, mobile, and VR applications.
 
 
 ## Shaders
 
-### Minimal Shader
+### Minimal Shaders
 
-This terrain is driven by the GPU, and controlled by our shader. We provide a minimal shader that has only the code needed to shape the terrain mesh without any texturing. You can find it in `extras/minimum.gdshader`.
+This terrain is driven by the GPU, and controlled by our shader. We provide a minimal shader that has only the code needed to shape the terrain mesh without any texturing that you can use as a base to build your own. There's also versions that use the color map, and have a low-poly look with flat normals. Find them all in `extras/shaders/minimum.gdshader`.
 
 Load this shader into the override shader slot and enable it. It includes no texturing so you can create your own.
+
+### Low-poly & PS1 Styles
+
+Older style asthetics has a few different looks:
+
+**PS1 style** often has blocky textures, which can be achieved by:
+* Use low res textures
+* In the Terrain3DTextureAsset, decreasing UV Scale
+* In the material, change Texture Filtering to Nearest. If you make your own shader, make sure to change your samplers to use Nearest filtering instead of Linear.
+
+**Low-poly Style** often has large, flat shaded polygons. To get the best results:
+* Increase `vertex_spacing` to a large value like 10
+* Enable `Flat Terrain Normals` in the material settings.
 
 
 ### Day/Night cycles & light under the terrain
@@ -107,63 +123,43 @@ uniform sampler2D emissive_tex : source_color, filter_linear_mipmap_anisotropic,
 Add a variable to store emissive value in the Material struct.
 
 ```glsl
-// struct Material {
+struct material {
 	...
 	vec3 emissive;
-// };
+};
 ```
 
-Modify `get_material()` to read the emissive texture with the next several options. 
+Modify `accumulate_material()` to read the emissive texture with the next several options. 
 
-Add the initial value for emissive by adding a vec3 at the end
+Add the initial value for emissive by adding a vec3 at the end:
 ```glsl
-// void get_material(vec2 base_uv, ...
-	out_mat = Material(vec4(0.), vec4(0.), 0, 0, 0.0, vec3(0.));
+	// Struct to accumulate all texture data.
+	material mat = material(vec4(0.0), vec4(0.0), 0., 0., 0., vec3(0.));
 ```
 
-Look for this conditional:
+Near the bottom of `accumulate_material()`:
 ```glsl
-	if (out_mat.blend > 0.) {
+	mat.normal_rough += nrm * id_weight;
+	mat.normal_map_depth += _texture_normal_depth_array[id] * id_weight;
+	mat.ao_strength += _texture_ao_strength_array[id] * id_weight;
+	mat.total_weight += id_weight;
 ```
 
-Right before that, add:
+on the next line add:
 ```glsl
-	vec4 emissive = vec4(0.);
-	if(out_mat.base == emissive_id) {
-		emissive = textureGrad(emissive_tex, matUV, dd1.xy, dd1.zw);
+	if(id == emissive_id) {
+		mat.emissive += textureGrad(emissive_tex, vec3(id_uv, float(id)), id_dd.xy, id_dd.zw).rgb *= id_weight;
 	}
-
-//	if (out_mat.blend > 0.) {
 ```
 
-At the end of that block, before the `}`, add:
+Find this in `fragment()`, before the final `}`, apply the weighting and send it to the GPU.
 ```glsl
-	vec4 emissive2 = vec4(0.);
-	emissive2 = textureGrad(emissive_tex, matUV2, dd2.xy, dd2.zw) * float(out_mat.over == emissive_id);
-	emissive = height_blend(emissive, albedo_ht.a, emissive2, albedo_ht2.a, out_mat.blend);
-
-//	}
-```
-
-At the end of the `get_material()` function, add the emissive value to the material
-```glsl
-//	out_mat.alb_ht = albedo_ht;
-//	out_mat.nrm_rg = normal_rg;
-	out_mat.emissive = emissive.rgb;
-//	return;
-//	}
-```
-
-At the very bottom of `fragment()`, before the final `}`, apply the weighting and send it to the GPU.
-```glsl
-vec3 emissive = 
-	mat[0].emissive * weights.x +
-	mat[1].emissive * weights.y +
-	mat[2].emissive * weights.z +
-	mat[3].emissive * weights.w ;
-EMISSION = emissive * emissive_strength;
-
-// }
+	// normalize accumulated values back to 0.0 - 1.0 range.
+	float weight_inv = 1.0 / total_weight;
+	mat.albedo_height *= weight_inv;
+	...
+	mat.emissive *= weight_inv;
+	EMISSION = mat.emissive * emissive_strength;
 ```
 
 Next, add your emissive texture to the texture sampler and adjust the values on the newly exposed uniforms.

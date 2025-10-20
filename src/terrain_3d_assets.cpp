@@ -343,25 +343,12 @@ void Terrain3DAssets::_update_texture_settings() {
 	emit_signal("textures_changed");
 }
 
-void Terrain3DAssets::_update_thumbnail(const Ref<Terrain3DMeshAsset> &p_mesh_asset) {
-	if (p_mesh_asset.is_valid()) {
-		create_mesh_thumbnails(p_mesh_asset->get_id());
-	}
-}
-
-///////////////////////////
-// Public Functions
-///////////////////////////
-
-void Terrain3DAssets::initialize(Terrain3D *p_terrain) {
-	if (p_terrain) {
-		_terrain = p_terrain;
-	} else {
-		LOG(ERROR, "Initialization failed, p_terrain is null");
+void Terrain3DAssets::_setup_thumbnail_creation() {
+	IS_INIT(VOID);
+	if (_scenario.is_valid()) {
 		return;
 	}
-	LOG(INFO, "Initializing assets");
-
+	LOG(INFO, "Setting up mesh thumbnail creation viewports");
 	// Setup Mesh preview environment
 	_scenario = RS->scenario_create();
 
@@ -389,6 +376,29 @@ void Terrain3DAssets::initialize(Terrain3D *p_terrain) {
 
 	_mesh_instance = RS->instance_create();
 	RS->instance_set_scenario(_mesh_instance, _scenario);
+}
+
+void Terrain3DAssets::_update_thumbnail(const Ref<Terrain3DMeshAsset> &p_mesh_asset) {
+	if (p_mesh_asset.is_valid()) {
+		create_mesh_thumbnails(p_mesh_asset->get_id());
+	}
+}
+
+///////////////////////////
+// Public Functions
+///////////////////////////
+
+void Terrain3DAssets::initialize(Terrain3D *p_terrain) {
+	if (p_terrain) {
+		_terrain = p_terrain;
+	} else {
+		LOG(ERROR, "Initialization failed, p_terrain is null");
+		return;
+	}
+	LOG(INFO, "Initializing assets");
+	if (IS_EDITOR) {
+		_setup_thumbnail_creation();
+	}
 
 	// Update assets
 	update_texture_list();
@@ -401,19 +411,37 @@ void Terrain3DAssets::uninitialize() {
 }
 
 void Terrain3DAssets::destroy() {
-	IS_INIT(VOID);
 	LOG(INFO, "Destroying assets");
 	_terrain = nullptr;
 	_generated_albedo_textures.clear();
 	_generated_normal_textures.clear();
-	RS->free_rid(_mesh_instance);
-	RS->free_rid(_fill_light_instance);
-	RS->free_rid(_fill_light);
-	RS->free_rid(_key_light_instance);
-	RS->free_rid(_key_light);
-	RS->free_rid(_camera);
-	RS->free_rid(_viewport);
-	RS->free_rid(_scenario);
+	_texture_list.clear();
+	_mesh_list.clear();
+	_texture_colors.clear();
+	_texture_normal_depths.clear();
+	_texture_ao_strengths.clear();
+	_texture_roughness_mods.clear();
+	_texture_uv_scales.clear();
+	_texture_detiles.clear();
+
+	if (_scenario.is_valid()) {
+		RS->free_rid(_mesh_instance);
+		RS->free_rid(_fill_light_instance);
+		RS->free_rid(_fill_light);
+		RS->free_rid(_key_light_instance);
+		RS->free_rid(_key_light);
+		RS->free_rid(_camera);
+		RS->free_rid(_viewport);
+		RS->free_rid(_scenario);
+		_mesh_instance = RID();
+		_fill_light_instance = RID();
+		_fill_light = RID();
+		_key_light_instance = RID();
+		_key_light = RID();
+		_camera = RID();
+		_viewport = RID();
+		_scenario = RID();
+	}
 }
 
 void Terrain3DAssets::set_texture(const int p_id, const Ref<Terrain3DTextureAsset> &p_texture) {
@@ -487,6 +515,7 @@ void Terrain3DAssets::set_mesh_list(const TypedArray<Terrain3DMeshAsset> &p_mesh
 // p_id = -1 for all meshes
 // Adapted from godot\editor\plugins\editor_preview_plugins.cpp:EditorMeshPreviewPlugin
 void Terrain3DAssets::create_mesh_thumbnails(const int p_id, const Vector2i &p_size) {
+	LOG(INFO, "Creating mesh thumbnails");
 	int start, end;
 	int max = get_mesh_count();
 	if (p_id < 0) {
@@ -667,8 +696,8 @@ void Terrain3DAssets::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("save", "path"), &Terrain3DAssets::save, DEFVAL(""));
 
 	int ro_flags = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_READ_ONLY;
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "mesh_list", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Terrain3DMeshAsset"), ro_flags), "set_mesh_list", "get_mesh_list");
-	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "texture_list", PROPERTY_HINT_ARRAY_TYPE, vformat("%tex_size/%tex_size:%tex_size", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "Terrain3DTextureAsset"), ro_flags), "set_texture_list", "get_texture_list");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "mesh_list", PROPERTY_HINT_ARRAY_TYPE, "Terrain3DMeshAsset", ro_flags), "set_mesh_list", "get_mesh_list");
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "texture_list", PROPERTY_HINT_ARRAY_TYPE, "Terrain3DTextureAsset", ro_flags), "set_texture_list", "get_texture_list");
 
 	ADD_SIGNAL(MethodInfo("meshes_changed"));
 	ADD_SIGNAL(MethodInfo("textures_changed"));

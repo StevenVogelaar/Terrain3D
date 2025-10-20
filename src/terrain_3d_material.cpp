@@ -133,19 +133,16 @@ String Terrain3DMaterial::_generate_shader_code() const {
 		excludes.push_back("TEXTURE_SAMPLERS_LINEAR");
 		excludes.push_back("NOISE_SAMPLER_LINEAR");
 	}
-	if (_auto_shader) {
-		excludes.push_back("TEXTURE_ID");
-	} else {
+	if (!_auto_shader) {
 		excludes.push_back("AUTO_SHADER_UNIFORMS");
-		excludes.push_back("AUTO_SHADER_TEXTURE_ID");
+		excludes.push_back("AUTO_SHADER");
 	}
-	if (_dual_scaling) {
-		excludes.push_back("UNI_SCALING_BASE");
-	} else {
+	if (!_dual_scaling) {
 		excludes.push_back("DUAL_SCALING_UNIFORMS");
-		excludes.push_back("DUAL_SCALING_VERTEX");
-		excludes.push_back("DUAL_SCALING_BASE");
-		excludes.push_back("DUAL_SCALING_OVERLAY");
+		excludes.push_back("DUAL_SCALING");
+		excludes.push_back("DUAL_SCALING_CONDITION_0");
+		excludes.push_back("DUAL_SCALING_CONDITION_1");
+		excludes.push_back("DUAL_SCALING_MIX");
 	}
 	String shader = _apply_inserts(_shader_code["main"], excludes);
 	return shader;
@@ -263,6 +260,7 @@ String Terrain3DMaterial::_inject_editor_code(const String &p_shader) const {
 	//	shader = shader.insert(idx, "\n\n" + insert);
 	//	idx += insert.length();
 	//}
+	//insert_names.clear();
 
 	// Insert before vertex()
 	regex->compile("void\\s+vertex\\s*\\(");
@@ -272,15 +270,19 @@ String Terrain3DMaterial::_inject_editor_code(const String &p_shader) const {
 		LOG(DEBUG, "No void vertex(); cannot inject editor code");
 		return shader;
 	}
-	insert_names.clear();
 	if (IS_EDITOR && _terrain && _terrain->get_editor()) {
-		insert_names.push_back("EDITOR_SETUP_DECAL");
+		insert_names.push_back("EDITOR_DECAL_SETUP");
 	}
+	if (_show_contours) {
+		insert_names.push_back("OVERLAY_CONTOURS_SETUP");
+	}
+	// Apply pending inserts
 	for (int i = 0; i < insert_names.size(); i++) {
 		String insert = _shader_code[insert_names[i]];
 		shader = shader.insert(idx, "\n" + insert);
 		idx += insert.length();
 	}
+	insert_names.clear();
 
 	// Insert at the end of `fragment(){ }`
 	// Check for each nested {} pair until the closing } is found.
@@ -306,7 +308,8 @@ String Terrain3DMaterial::_inject_editor_code(const String &p_shader) const {
 		LOG(DEBUG, "No ending bracket; cannot inject editor code");
 		return shader;
 	}
-	insert_names.clear();
+
+	// Debug Views
 	if (_debug_view_checkered) {
 		insert_names.push_back("DEBUG_CHECKERED");
 	}
@@ -315,6 +318,9 @@ String Terrain3DMaterial::_inject_editor_code(const String &p_shader) const {
 	}
 	if (_debug_view_heightmap) {
 		insert_names.push_back("DEBUG_HEIGHTMAP");
+	}
+	if (_debug_view_jaggedness) {
+		insert_names.push_back("DEBUG_JAGGEDNESS");
 	}
 	if (_debug_view_colormap) {
 		insert_names.push_back("DEBUG_COLORMAP");
@@ -346,21 +352,27 @@ String Terrain3DMaterial::_inject_editor_code(const String &p_shader) const {
 	if (_debug_view_tex_rough) {
 		insert_names.push_back("DEBUG_TEXTURE_ROUGHNESS");
 	}
-	if (_debug_view_region_grid) {
-		insert_names.push_back("DEBUG_REGION_GRID");
+
+	// Overlays & Editor Functions
+	if (_show_contours) {
+		insert_names.push_back("OVERLAY_CONTOURS_RENDER");
 	}
-	if (_debug_view_instancer_grid) {
-		insert_names.push_back("DEBUG_INSTANCER_GRID");
+	if (_show_region_grid) {
+		insert_names.push_back("OVERLAY_REGION_GRID");
 	}
-	if (_debug_view_vertex_grid) {
-		insert_names.push_back("DEBUG_VERTEX_GRID");
+	if (_show_instancer_grid) {
+		insert_names.push_back("OVERLAY_INSTANCER_GRID");
+	}
+	if (_show_vertex_grid) {
+		insert_names.push_back("OVERLAY_VERTEX_GRID");
 	}
 	if (_show_navigation || (IS_EDITOR && _terrain && _terrain->get_editor() && _terrain->get_editor()->get_tool() == Terrain3DEditor::NAVIGATION)) {
 		insert_names.push_back("EDITOR_NAVIGATION");
 	}
 	if (IS_EDITOR && _terrain && _terrain->get_editor()) {
-		insert_names.push_back("EDITOR_RENDER_DECAL");
+		insert_names.push_back("EDITOR_DECAL_RENDER");
 	}
+	// Apply pending inserts
 	for (int i = 0; i < insert_names.size(); i++) {
 		String insert = _shader_code[insert_names[i]];
 		shader = shader.insert(idx, "\n" + insert);
@@ -560,7 +572,9 @@ void Terrain3DMaterial::initialize(Terrain3D *p_terrain) {
 	}
 	LOG(INFO, "Initializing material");
 	_preload_shaders();
-	_material = RS->material_create();
+	if (!_material.is_valid()) {
+		_material = RS->material_create();
+	}
 	_shader.instantiate();
 	_update_shader();
 	_update_maps();
@@ -572,10 +586,16 @@ void Terrain3DMaterial::uninitialize() {
 }
 
 void Terrain3DMaterial::destroy() {
-	IS_INIT(VOID);
 	LOG(INFO, "Destroying material");
 	_terrain = nullptr;
-	RS->free_rid(_material);
+	_shader.unref();
+	_shader_code.clear();
+	_active_params.clear();
+	_shader_params.clear();
+	if (_material.is_valid()) {
+		RS->free_rid(_material);
+		_material = RID();
+	}
 }
 
 void Terrain3DMaterial::update() {
@@ -635,6 +655,36 @@ Variant Terrain3DMaterial::get_shader_param(const StringName &p_name) const {
 	return value;
 }
 
+void Terrain3DMaterial::set_show_region_grid(const bool p_enabled) {
+	LOG(INFO, "Enable show_region_grid: ", p_enabled);
+	_show_region_grid = p_enabled;
+	_update_shader();
+}
+
+void Terrain3DMaterial::set_show_instancer_grid(const bool p_enabled) {
+	LOG(INFO, "Enable show_instancer_grid: ", p_enabled);
+	_show_instancer_grid = p_enabled;
+	_update_shader();
+}
+
+void Terrain3DMaterial::set_show_vertex_grid(const bool p_enabled) {
+	LOG(INFO, "Enable show_vertex_grid: ", p_enabled);
+	_show_vertex_grid = p_enabled;
+	_update_shader();
+}
+
+void Terrain3DMaterial::set_show_contours(const bool p_enabled) {
+	LOG(INFO, "Enable show_contours: ", p_enabled);
+	_show_contours = p_enabled;
+	_update_shader();
+}
+
+void Terrain3DMaterial::set_show_navigation(const bool p_enabled) {
+	LOG(INFO, "Enable show_navigation: ", p_enabled);
+	_show_navigation = p_enabled;
+	_update_shader();
+}
+
 void Terrain3DMaterial::set_show_checkered(const bool p_enabled) {
 	LOG(INFO, "Enable set_show_checkered: ", p_enabled);
 	_debug_view_checkered = p_enabled;
@@ -650,6 +700,12 @@ void Terrain3DMaterial::set_show_grey(const bool p_enabled) {
 void Terrain3DMaterial::set_show_heightmap(const bool p_enabled) {
 	LOG(INFO, "Enable show_heightmap: ", p_enabled);
 	_debug_view_heightmap = p_enabled;
+	_update_shader();
+}
+
+void Terrain3DMaterial::set_show_jaggedness(const bool p_enabled) {
+	LOG(INFO, "Enable show_jaggedness: ", p_enabled);
+	_debug_view_jaggedness = p_enabled;
 	_update_shader();
 }
 
@@ -695,12 +751,6 @@ void Terrain3DMaterial::set_show_autoshader(const bool p_enabled) {
 	_update_shader();
 }
 
-void Terrain3DMaterial::set_show_navigation(const bool p_enabled) {
-	LOG(INFO, "Enable show_navigation: ", p_enabled);
-	_show_navigation = p_enabled;
-	_update_shader();
-}
-
 void Terrain3DMaterial::set_show_texture_height(const bool p_enabled) {
 	LOG(INFO, "Enable show_texture_height: ", p_enabled);
 	_debug_view_tex_height = p_enabled;
@@ -716,24 +766,6 @@ void Terrain3DMaterial::set_show_texture_normal(const bool p_enabled) {
 void Terrain3DMaterial::set_show_texture_rough(const bool p_enabled) {
 	LOG(INFO, "Enable show_texture_rough: ", p_enabled);
 	_debug_view_tex_rough = p_enabled;
-	_update_shader();
-}
-
-void Terrain3DMaterial::set_show_region_grid(const bool p_enabled) {
-	LOG(INFO, "Enable show_region_grid: ", p_enabled);
-	_debug_view_region_grid = p_enabled;
-	_update_shader();
-}
-
-void Terrain3DMaterial::set_show_instancer_grid(const bool p_enabled) {
-	LOG(INFO, "Enable show_instancer_grid: ", p_enabled);
-	_debug_view_instancer_grid = p_enabled;
-	_update_shader();
-}
-
-void Terrain3DMaterial::set_show_vertex_grid(const bool p_enabled) {
-	LOG(INFO, "Enable show_vertex_grid: ", p_enabled);
-	_debug_view_vertex_grid = p_enabled;
 	_update_shader();
 }
 
@@ -931,12 +963,27 @@ void Terrain3DMaterial::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_shader_param", "name", "value"), &Terrain3DMaterial::set_shader_param);
 	ClassDB::bind_method(D_METHOD("get_shader_param", "name"), &Terrain3DMaterial::get_shader_param);
 
+	// Overlays
+	ClassDB::bind_method(D_METHOD("set_show_region_grid", "enabled"), &Terrain3DMaterial::set_show_region_grid);
+	ClassDB::bind_method(D_METHOD("get_show_region_grid"), &Terrain3DMaterial::get_show_region_grid);
+	ClassDB::bind_method(D_METHOD("set_show_instancer_grid", "enabled"), &Terrain3DMaterial::set_show_instancer_grid);
+	ClassDB::bind_method(D_METHOD("get_show_instancer_grid"), &Terrain3DMaterial::get_show_instancer_grid);
+	ClassDB::bind_method(D_METHOD("set_show_vertex_grid", "enabled"), &Terrain3DMaterial::set_show_vertex_grid);
+	ClassDB::bind_method(D_METHOD("get_show_vertex_grid"), &Terrain3DMaterial::get_show_vertex_grid);
+	ClassDB::bind_method(D_METHOD("set_show_contours", "enabled"), &Terrain3DMaterial::set_show_contours);
+	ClassDB::bind_method(D_METHOD("get_show_contours"), &Terrain3DMaterial::get_show_contours);
+	ClassDB::bind_method(D_METHOD("set_show_navigation", "enabled"), &Terrain3DMaterial::set_show_navigation);
+	ClassDB::bind_method(D_METHOD("get_show_navigation"), &Terrain3DMaterial::get_show_navigation);
+
+	// Debug Views
 	ClassDB::bind_method(D_METHOD("set_show_checkered", "enabled"), &Terrain3DMaterial::set_show_checkered);
 	ClassDB::bind_method(D_METHOD("get_show_checkered"), &Terrain3DMaterial::get_show_checkered);
 	ClassDB::bind_method(D_METHOD("set_show_grey", "enabled"), &Terrain3DMaterial::set_show_grey);
 	ClassDB::bind_method(D_METHOD("get_show_grey"), &Terrain3DMaterial::get_show_grey);
 	ClassDB::bind_method(D_METHOD("set_show_heightmap", "enabled"), &Terrain3DMaterial::set_show_heightmap);
 	ClassDB::bind_method(D_METHOD("get_show_heightmap"), &Terrain3DMaterial::get_show_heightmap);
+	ClassDB::bind_method(D_METHOD("set_show_jaggedness", "enabled"), &Terrain3DMaterial::set_show_jaggedness);
+	ClassDB::bind_method(D_METHOD("get_show_jaggedness"), &Terrain3DMaterial::get_show_jaggedness);
 	ClassDB::bind_method(D_METHOD("set_show_colormap", "enabled"), &Terrain3DMaterial::set_show_colormap);
 	ClassDB::bind_method(D_METHOD("get_show_colormap"), &Terrain3DMaterial::get_show_colormap);
 	ClassDB::bind_method(D_METHOD("set_show_roughmap", "enabled"), &Terrain3DMaterial::set_show_roughmap);
@@ -951,47 +998,43 @@ void Terrain3DMaterial::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_show_control_blend"), &Terrain3DMaterial::get_show_control_blend);
 	ClassDB::bind_method(D_METHOD("set_show_autoshader", "enabled"), &Terrain3DMaterial::set_show_autoshader);
 	ClassDB::bind_method(D_METHOD("get_show_autoshader"), &Terrain3DMaterial::get_show_autoshader);
-	ClassDB::bind_method(D_METHOD("set_show_navigation", "enabled"), &Terrain3DMaterial::set_show_navigation);
-	ClassDB::bind_method(D_METHOD("get_show_navigation"), &Terrain3DMaterial::get_show_navigation);
 	ClassDB::bind_method(D_METHOD("set_show_texture_height", "enabled"), &Terrain3DMaterial::set_show_texture_height);
 	ClassDB::bind_method(D_METHOD("get_show_texture_height"), &Terrain3DMaterial::get_show_texture_height);
 	ClassDB::bind_method(D_METHOD("set_show_texture_normal", "enabled"), &Terrain3DMaterial::set_show_texture_normal);
 	ClassDB::bind_method(D_METHOD("get_show_texture_normal"), &Terrain3DMaterial::get_show_texture_normal);
 	ClassDB::bind_method(D_METHOD("set_show_texture_rough", "enabled"), &Terrain3DMaterial::set_show_texture_rough);
 	ClassDB::bind_method(D_METHOD("get_show_texture_rough"), &Terrain3DMaterial::get_show_texture_rough);
-	ClassDB::bind_method(D_METHOD("set_show_region_grid", "enabled"), &Terrain3DMaterial::set_show_region_grid);
-	ClassDB::bind_method(D_METHOD("get_show_region_grid"), &Terrain3DMaterial::get_show_region_grid);
-	ClassDB::bind_method(D_METHOD("set_show_instancer_grid", "enabled"), &Terrain3DMaterial::set_show_instancer_grid);
-	ClassDB::bind_method(D_METHOD("get_show_instancer_grid"), &Terrain3DMaterial::get_show_instancer_grid);
-	ClassDB::bind_method(D_METHOD("set_show_vertex_grid", "enabled"), &Terrain3DMaterial::set_show_vertex_grid);
-	ClassDB::bind_method(D_METHOD("get_show_vertex_grid"), &Terrain3DMaterial::get_show_vertex_grid);
 
 	ClassDB::bind_method(D_METHOD("save", "path"), &Terrain3DMaterial::save, DEFVAL(""));
 
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "world_background", PROPERTY_HINT_ENUM, "None,Flat,Noise"), "set_world_background", "get_world_background");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "texture_filtering", PROPERTY_HINT_ENUM, "Linear,Nearest"), "set_texture_filtering", "get_texture_filtering");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "auto_shader", PROPERTY_HINT_NONE), "set_auto_shader", "get_auto_shader");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "dual_scaling", PROPERTY_HINT_NONE), "set_dual_scaling", "get_dual_scaling");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "auto_shader"), "set_auto_shader", "get_auto_shader");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "dual_scaling"), "set_dual_scaling", "get_dual_scaling");
 
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "shader_override_enabled", PROPERTY_HINT_NONE), "enable_shader_override", "is_shader_override_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "shader_override_enabled"), "enable_shader_override", "is_shader_override_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "shader_override", PROPERTY_HINT_RESOURCE_TYPE, "Shader"), "set_shader_override", "get_shader_override");
 
+	ADD_GROUP("Overlays", "show_");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_region_grid"), "set_show_region_grid", "get_show_region_grid");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_instancer_grid"), "set_show_instancer_grid", "get_show_instancer_grid");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_vertex_grid"), "set_show_vertex_grid", "get_show_vertex_grid");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_contours"), "set_show_contours", "get_show_contours");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_navigation"), "set_show_navigation", "get_show_navigation");
+
 	ADD_GROUP("Debug Views", "show_");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_checkered", PROPERTY_HINT_NONE), "set_show_checkered", "get_show_checkered");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_grey", PROPERTY_HINT_NONE), "set_show_grey", "get_show_grey");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_heightmap", PROPERTY_HINT_NONE), "set_show_heightmap", "get_show_heightmap");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_colormap", PROPERTY_HINT_NONE), "set_show_colormap", "get_show_colormap");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_roughmap", PROPERTY_HINT_NONE), "set_show_roughmap", "get_show_roughmap");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_control_texture", PROPERTY_HINT_NONE), "set_show_control_texture", "get_show_control_texture");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_control_angle", PROPERTY_HINT_NONE), "set_show_control_angle", "get_show_control_angle");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_control_scale", PROPERTY_HINT_NONE), "set_show_control_scale", "get_show_control_scale");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_control_blend", PROPERTY_HINT_NONE), "set_show_control_blend", "get_show_control_blend");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_autoshader", PROPERTY_HINT_NONE), "set_show_autoshader", "get_show_autoshader");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_navigation", PROPERTY_HINT_NONE), "set_show_navigation", "get_show_navigation");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_texture_height", PROPERTY_HINT_NONE), "set_show_texture_height", "get_show_texture_height");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_texture_normal", PROPERTY_HINT_NONE), "set_show_texture_normal", "get_show_texture_normal");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_texture_rough", PROPERTY_HINT_NONE), "set_show_texture_rough", "get_show_texture_rough");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_region_grid", PROPERTY_HINT_NONE), "set_show_region_grid", "get_show_region_grid");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_instancer_grid", PROPERTY_HINT_NONE), "set_show_instancer_grid", "get_show_instancer_grid");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_vertex_grid", PROPERTY_HINT_NONE), "set_show_vertex_grid", "get_show_vertex_grid");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_checkered"), "set_show_checkered", "get_show_checkered");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_grey"), "set_show_grey", "get_show_grey");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_heightmap"), "set_show_heightmap", "get_show_heightmap");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_jaggedness"), "set_show_jaggedness", "get_show_jaggedness");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_colormap"), "set_show_colormap", "get_show_colormap");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_roughmap"), "set_show_roughmap", "get_show_roughmap");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_control_texture"), "set_show_control_texture", "get_show_control_texture");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_control_angle"), "set_show_control_angle", "get_show_control_angle");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_control_scale"), "set_show_control_scale", "get_show_control_scale");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_control_blend"), "set_show_control_blend", "get_show_control_blend");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_autoshader"), "set_show_autoshader", "get_show_autoshader");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_texture_height"), "set_show_texture_height", "get_show_texture_height");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_texture_normal"), "set_show_texture_normal", "get_show_texture_normal");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_texture_rough"), "set_show_texture_rough", "get_show_texture_rough");
 }

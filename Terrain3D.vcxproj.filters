@@ -238,10 +238,13 @@
     <None Include=".github\workflows\web.yml">
       <Filter>1. Project Files</Filter>
     </None>
-    <None Include="project\addons\terrain_3d\extras\minimum.gdshader">
+    <None Include="project\addons\terrain_3d\extras\shaders\minimum.gdshader">
       <Filter>4. Shaders</Filter>
     </None>
     <None Include="doc\docs\heightmaps.md">
+      <Filter>2. Docs</Filter>
+    </None>
+    <None Include="doc\docs\tips_environment.md">
       <Filter>2. Docs</Filter>
     </None>
   </ItemGroup>
@@ -273,7 +276,7 @@
     <Text Include="doc\docs\texture_prep.md">
       <Filter>2. Docs</Filter>
     </Text>
-    <Text Include="doc\docs\tips.md">
+    <Text Include="doc\docs\tips_technical.md">
       <Filter>2. Docs</Filter>
     </Text>
     <Text Include="doc\docs\troubleshooting.md">

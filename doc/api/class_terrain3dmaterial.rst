@@ -36,7 +36,7 @@ Properties
    +------------------------------------------------------------------+------------------------------------------------------------------------------------------+-----------+
    | ``Dictionary``                                                   | :ref:`_shader_parameters<class_Terrain3DMaterial_property__shader_parameters>`           | ``{}``    |
    +------------------------------------------------------------------+------------------------------------------------------------------------------------------+-----------+
-   | ``bool``                                                         | :ref:`auto_shader<class_Terrain3DMaterial_property_auto_shader>`                         | ``true``  |
+   | ``bool``                                                         | :ref:`auto_shader<class_Terrain3DMaterial_property_auto_shader>`                         | ``false`` |
    +------------------------------------------------------------------+------------------------------------------------------------------------------------------+-----------+
    | ``bool``                                                         | :ref:`dual_scaling<class_Terrain3DMaterial_property_dual_scaling>`                       | ``false`` |
    +------------------------------------------------------------------+------------------------------------------------------------------------------------------+-----------+
@@ -49,6 +49,8 @@ Properties
    | ``bool``                                                         | :ref:`show_checkered<class_Terrain3DMaterial_property_show_checkered>`                   | ``false`` |
    +------------------------------------------------------------------+------------------------------------------------------------------------------------------+-----------+
    | ``bool``                                                         | :ref:`show_colormap<class_Terrain3DMaterial_property_show_colormap>`                     | ``false`` |
+   +------------------------------------------------------------------+------------------------------------------------------------------------------------------+-----------+
+   | ``bool``                                                         | :ref:`show_contours<class_Terrain3DMaterial_property_show_contours>`                     | ``false`` |
    +------------------------------------------------------------------+------------------------------------------------------------------------------------------+-----------+
    | ``bool``                                                         | :ref:`show_control_angle<class_Terrain3DMaterial_property_show_control_angle>`           | ``false`` |
    +------------------------------------------------------------------+------------------------------------------------------------------------------------------+-----------+
@@ -63,6 +65,8 @@ Properties
    | ``bool``                                                         | :ref:`show_heightmap<class_Terrain3DMaterial_property_show_heightmap>`                   | ``false`` |
    +------------------------------------------------------------------+------------------------------------------------------------------------------------------+-----------+
    | ``bool``                                                         | :ref:`show_instancer_grid<class_Terrain3DMaterial_property_show_instancer_grid>`         | ``false`` |
+   +------------------------------------------------------------------+------------------------------------------------------------------------------------------+-----------+
+   | ``bool``                                                         | :ref:`show_jaggedness<class_Terrain3DMaterial_property_show_jaggedness>`                 | ``false`` |
    +------------------------------------------------------------------+------------------------------------------------------------------------------------------+-----------+
    | ``bool``                                                         | :ref:`show_navigation<class_Terrain3DMaterial_property_show_navigation>`                 | ``false`` |
    +------------------------------------------------------------------+------------------------------------------------------------------------------------------+-----------+
@@ -195,7 +199,7 @@ This private dictionary stores all of the shader parameters in the resource. It 
 
 .. rst-class:: classref-property
 
-``bool`` **auto_shader** = ``true`` :ref:`🔗<class_Terrain3DMaterial_property_auto_shader>`
+``bool`` **auto_shader** = ``false`` :ref:`🔗<class_Terrain3DMaterial_property_auto_shader>`
 
 .. rst-class:: classref-property-setget
 
@@ -312,6 +316,23 @@ Places the color map in the albedo channel.
 
 ----
 
+.. _class_Terrain3DMaterial_property_show_contours:
+
+.. rst-class:: classref-property
+
+``bool`` **show_contours** = ``false`` :ref:`🔗<class_Terrain3DMaterial_property_show_contours>`
+
+.. rst-class:: classref-property-setget
+
+- |void| **set_show_contours**\ (\ value\: ``bool``\ )
+- ``bool`` **get_show_contours**\ (\ )
+
+Overlays contour lines on the terrain. Customize the options in the material when enabled. Press `4` with the mouse in the viewport to toggle.
+
+.. rst-class:: classref-item-separator
+
+----
+
 .. _class_Terrain3DMaterial_property_show_control_angle:
 
 .. rst-class:: classref-property
@@ -340,7 +361,7 @@ Albedo shows the painted angle. Orange means 0°, Yellow 270°, Cyan 180°, Viol
 - |void| **set_show_control_blend**\ (\ value\: ``bool``\ )
 - ``bool`` **get_show_control_blend**\ (\ )
 
-Albedo shows the blend value used to blend the base and overlay textures as greyscale. This is especially helpful to see how the noise texture adjusts the blending edges.
+Displays the values used to blend the textures. Blue shows the autoshader blending, red shows manually painted blending.
 
 .. rst-class:: classref-item-separator
 
@@ -425,7 +446,24 @@ Albedo is a white to black gradient depending on height. The gradient is scaled 
 - |void| **set_show_instancer_grid**\ (\ value\: ``bool``\ )
 - ``bool`` **get_show_instancer_grid**\ (\ )
 
-Draws the 32x32m cell grid on the terrain, which shows how the instancer data is partitioned.
+Overlays the 32x32m instancer grid on the terrain, which shows how the instancer data is partitioned. Press `2` with the mouse in the viewport to toggle.
+
+.. rst-class:: classref-item-separator
+
+----
+
+.. _class_Terrain3DMaterial_property_show_jaggedness:
+
+.. rst-class:: classref-property
+
+``bool`` **show_jaggedness** = ``false`` :ref:`🔗<class_Terrain3DMaterial_property_show_jaggedness>`
+
+.. rst-class:: classref-property-setget
+
+- |void| **set_show_jaggedness**\ (\ value\: ``bool``\ )
+- ``bool`` **get_show_jaggedness**\ (\ )
+
+Highlights non-smooth areas of the terrain. Jagged peaks, troughs, or edges that are a bit rough with sharp angles between vertices.
 
 .. rst-class:: classref-item-separator
 
@@ -459,7 +497,7 @@ Displays the area designated for generating the navigation mesh.
 - |void| **set_show_region_grid**\ (\ value\: ``bool``\ )
 - ``bool`` **get_show_region_grid**\ (\ )
 
-Draws the region grid directly on the terrain. This is more accurate than the region grid gizmo for determining where the region border is when editing.
+Overlays the region grid on the terrain. This is more accurate than the region grid gizmo for determining where the region border is when editing. Press `1` with the mouse in the viewport to toggle.
 
 .. rst-class:: classref-item-separator
 
@@ -544,7 +582,7 @@ Albedo is set to the painted Roughness textures. This is different from the roug
 - |void| **set_show_vertex_grid**\ (\ value\: ``bool``\ )
 - ``bool`` **get_show_vertex_grid**\ (\ )
 
-Show a grid on the vertices, overlaying any above shader.
+Overlays the vertex grid on the terrain, showing where each vertex is. Press `3` with the mouse in the viewport to toggle.
 
 .. rst-class:: classref-item-separator
 

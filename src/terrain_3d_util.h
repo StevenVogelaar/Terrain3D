@@ -9,6 +9,7 @@
 
 #include "constants.h"
 #include "generated_texture.h"
+#include "terrain_3d.h"
 
 using namespace godot;
 
@@ -49,6 +50,7 @@ public:
 			const Ref<Image> &p_src_a,
 			const bool p_invert_green = false,
 			const bool p_invert_alpha = false,
+			const bool p_normalize_alpha = false,
 			const int p_alpha_channel = 0);
 	static Ref<Image> luminance_to_height(const Ref<Image> &p_src_rgb);
 	static void benchmark(Terrain3D *p_terrain);
@@ -288,6 +290,10 @@ _FORCE_INLINE_ bool is_instance_valid(const uint64_t p_instance_id, Object *p_ob
 	} else {
 		return p_instance_id > 0 && obj;
 	}
+}
+
+_FORCE_INLINE_ String ptr_to_str(const void *p_ptr) {
+	return "0x" + String::num_uint64(uint64_t(p_ptr), 16, true);
 }
 
 #endif // TERRAIN3D_UTIL_CLASS_H

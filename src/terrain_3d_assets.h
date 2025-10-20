@@ -5,6 +5,7 @@
 
 #include "constants.h"
 #include "generated_texture.h"
+#include "terrain_3d.h"
 #include "terrain_3d_mesh_asset.h"
 #include "terrain_3d_texture_asset.h"
 
@@ -57,6 +58,7 @@ private:
 
 	void _update_texture_files();
 	void _update_texture_settings();
+	void _setup_thumbnail_creation();
 	void _update_thumbnail(const Ref<Terrain3DMeshAsset> &p_mesh_asset);
 
 public:
@@ -68,7 +70,7 @@ public:
 	void destroy();
 
 	void set_texture(const int p_id, const Ref<Terrain3DTextureAsset> &p_texture);
-	Ref<Terrain3DTextureAsset> get_texture(const int p_id) const { return _texture_list[p_id]; }
+	Ref<Terrain3DTextureAsset> get_texture(const int p_id) const;
 	void set_texture_list(const TypedArray<Terrain3DTextureAsset> &p_texture_list);
 	TypedArray<Terrain3DTextureAsset> get_texture_list() const { return _texture_list; }
 	int get_texture_count() const { return _texture_list.size(); }
@@ -98,5 +100,13 @@ protected:
 };
 
 VARIANT_ENUM_CAST(Terrain3DAssets::AssetType);
+
+inline Ref<Terrain3DTextureAsset> Terrain3DAssets::get_texture(const int p_id) const {
+	if (p_id >= 0 && p_id < _texture_list.size()) {
+		return _texture_list[p_id];
+	} else {
+		return Ref<Terrain3DTextureAsset>();
+	}
+}
 
 #endif // TERRAIN3D_ASSETS_CLASS_H

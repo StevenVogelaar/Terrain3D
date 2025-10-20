@@ -9,7 +9,9 @@
 
 #include "constants.h"
 #include "logger.h"
+#include "terrain_3d.h"
 #include "terrain_3d_collision.h"
+#include "terrain_3d_data.h"
 #include "terrain_3d_util.h"
 
 ///////////////////////////
@@ -23,7 +25,7 @@ Dictionary Terrain3DCollision::_get_shape_data(const Vector2i &p_position, const
 	int region_size = _terrain->get_region_size();
 
 	int hshape_size = p_size + 1; // Calculate last vertex at end
-	PackedFloat32Array map_data = PackedFloat32Array();
+	PackedRealArray map_data = PackedRealArray();
 	map_data.resize(hshape_size * hshape_size);
 	real_t min_height = FLT_MAX;
 	real_t max_height = FLT_MIN;

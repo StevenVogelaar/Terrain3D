@@ -3,7 +3,7 @@ Shader Design
 
 Our shader combines a lot of ideas and code from [cdxntchou's IndexMapTerrain](https://github.com/cdxntchou/IndexMapTerrain) for Unity, [Zylann's HTerrain](https://github.com/Zylann/godot_heightmap_plugin/) for Godot, the Witcher 3 talk linked in the System Design page, and our own thoughts and optimizations.
 
-In the material, you can enable `shader_override_enabled` with an empty `shader overide` slot and it will generate the default shader code so you can follow along with this document. You can also find the minimum shader needed to enable the terrain height functionality without texturing in `addons/terrain_3D/extras/minimum.gdshader`.
+In the material, you can enable `shader_override_enabled` with an empty `shader overide` slot and it will generate the default shader code so you can follow along with this document. You can also find the minimum shader needed to enable the terrain height functionality without texturing in `addons/terrain_3D/extras/shaders/minimum.gdshader`.
 
 At its core, the current texture painting and rendering system is a vertex painter, not a pixel painter. We paint codes at each vertex, 1m apart by default, represented as a pixel on the [Control map](controlmap_format.md). The shader uses its many parameters to control how each pixel between the vertices blend together. For an artist, it's not as nice to use as a multi-layer, pixel based painter you might find in Photoshop, but the dynamic nature of the system does afford other benefits.
 
@@ -25,12 +25,12 @@ Here's a quick summary of potential operations we might use to retreive a texel:
 * `textureLod()` - We provide UVs and mipmap LOD. The GPU returns an interpolated value.
 * `texelFetch()` - We provide UVs and mipmap LOD. The GPU returns the texel.
 
-`texture*()` functions interpolate from multiple samples of the texture map if linear filtering is enabled. Using either nearest filtering or texelFetch() disables interpolation.
+`texture*()` functions interpolate from multiple samples of the texture map if linear filtering is enabled. Using either nearest filtering or `texelFetch()` disables interpolation.
 
 
 ## Uniforms
 
-[Terrain3DMaterial](../api/class_terrain3dmaterial.rst) exposes uniforms found in the shader, including any you have added. Uniforms that begin with `_` are considered private and are hidden, but you can still access them via code. See [Tips](tips.md#accessing-private-shader-variables).
+[Terrain3DMaterial](../api/class_terrain3dmaterial.rst) exposes uniforms found in the shader, including any you have added. Uniforms that begin with `_` are considered private and are hidden, but you can still access them via code. See [Tips](tips_technical.md#accessing-private-shader-variables).
 
 These notable [Terrain3DData](../api/class_terrain3ddata.rst) arrays are passed in as uniforms. The API has more information on each.
 * [_region_map](../api/class_terrain3ddata.rst#class-terrain3ddata-method-get-region-map), [_region_locations](../api/class_terrain3ddata.rst#class-terrain3ddata-property-region-locations) store the location and ID of each region
@@ -82,9 +82,19 @@ Generating normals in the shader works fine, and modern GPUs can easily handle t
 
 ### Material Creation
 
-Next, the control maps are queried for each of the 4 grid points and stored in `control[0]`-`control[3]`. The control map bit packed format is defined in [Controlmap Format](controlmap_format.md). 
+The control maps are queried for each of the 4 adjacent grid points (aka vertices and indices) and stored in `control[0]`-`control[3]`.
 
-The textures at each point are looked up and stored in an array of structs. If there is an overlay texture, the two are height-blended here. Then the pixel position within the 4 grid points is bilinearly interpolated to get the weighting for the final pixel values.
+The control map bits, are decoded when needed, as defined in [Controlmap Format](controlmap_format.md).
+
+If the Autoshader is enabled, the control_data for each of the 4 grid points is overwritten with the autoshader ids and blend value calculated from the terrain normal and height.
+
+We then iterate over the point control_data to calculate the `texture_weight` of each `texture_id`. This takes into account how many points have a given texture, and the bilinear weight. Eg if an ID is present at only 3 of 4 index points, then its weight would be:
+
+`weights[0] * blend_weight[0] + weights[2] * blend_weight[2] + weights[3] * blend_weight[3]`
+
+This allows smooth interpolation and better blend shaping across the points during the material accumulation.
+
+The textures at each vertex are looked up and accumulated, the weight for each lookup is modified by the texture height value, sharpness, and potentially the world normal. The world space normal blend adjustment takes the normal map value of the texture in the base layer and uses it to modify the blend weight of the overlay layer of the same point. 
 
 Where possible, texture lookups are branched and in some cases only 2 samples are required, bringing VRAM bandwith requirements to a minimum.
 
@@ -99,9 +109,9 @@ The **Splat map approach** specifies an 8-bit strength value for each texture. 1
 
 When rendering, all splat maps are sampled, and of the 16-32 values, the 4 strongest are blended together, per terrain pixel. The blending of textures for pixels drawn between vertices is handled by the GPU's linear interpolated texture filter during texture lookups.
 
-The **Index map approach** samples a control map at 4 fixed grid points surrounding the current terrain pixel. The 4 surrounding samples have a base texture, an overlay texture, and a blending value. The base and overlay texture values range from 0-31, each stored in 5 bits. The blend values are stored in 8-bits.
+The **Index map approach** samples a control map at 4 fixed grid points surrounding the current terrain pixel. The 4 surrounding samples have two texture IDs, and a blending value. The texture values range from 0-31, each stored in 5 bits. The blend value is stored in 8-bits.
 
-The position of the pixel within its grid square is used to bilinearly interpolate the values of the 4 surrounding samples. We disable the default GPU interpolation on texture lookups and interpolate ourselves here. At distances where the the bilinear blend would occur across only 1 pixel in sceen space, the blend is skipped, requiring only 1/4 of the normal samples.
+The position of the pixel within its grid square is used to bilinearly interpolate the values of the 4 surrounding samples. We disable the default GPU interpolation on texture lookups and interpolate ourselves here. At distances where the the bilinear blend would occur across only 1 pixel in sceen space, the bilinear interpolation is skipped, requiring only 1/4 of the normal samples.
 
 **Comparing the two methods:**
 

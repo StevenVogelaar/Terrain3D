@@ -29,101 +29,105 @@ Properties
 .. table::
    :widths: auto
 
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | :ref:`Terrain3DAssets<class_Terrain3DAssets>`               | :ref:`assets<class_Terrain3D_property_assets>`                             |                 |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | RenderingServer.ShadowCastingSetting                        | :ref:`cast_shadows<class_Terrain3D_property_cast_shadows>`                 | ``1``           |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | :ref:`Terrain3DCollision<class_Terrain3DCollision>`         | :ref:`collision<class_Terrain3D_property_collision>`                       |                 |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``int``                                                     | :ref:`collision_layer<class_Terrain3D_property_collision_layer>`           | ``1``           |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``int``                                                     | :ref:`collision_mask<class_Terrain3D_property_collision_mask>`             | ``1``           |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | :ref:`CollisionMode<enum_Terrain3DCollision_CollisionMode>` | :ref:`collision_mode<class_Terrain3D_property_collision_mode>`             | ``1``           |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``float``                                                   | :ref:`collision_priority<class_Terrain3D_property_collision_priority>`     | ``1.0``         |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``int``                                                     | :ref:`collision_radius<class_Terrain3D_property_collision_radius>`         | ``64``          |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``int``                                                     | :ref:`collision_shape_size<class_Terrain3D_property_collision_shape_size>` | ``16``          |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``float``                                                   | :ref:`cull_margin<class_Terrain3D_property_cull_margin>`                   | ``0.0``         |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | :ref:`Terrain3DData<class_Terrain3DData>`                   | :ref:`data<class_Terrain3D_property_data>`                                 |                 |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``String``                                                  | :ref:`data_directory<class_Terrain3D_property_data_directory>`             | ``""``          |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``int``                                                     | :ref:`debug_level<class_Terrain3D_property_debug_level>`                   | ``0``           |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`free_editor_textures<class_Terrain3D_property_free_editor_textures>` | ``true``        |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | GeometryInstance3D.GIMode                                   | :ref:`gi_mode<class_Terrain3D_property_gi_mode>`                           | ``1``           |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | :ref:`Terrain3DInstancer<class_Terrain3DInstancer>`         | :ref:`instancer<class_Terrain3D_property_instancer>`                       |                 |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``float``                                                   | :ref:`label_distance<class_Terrain3D_property_label_distance>`             | ``0.0``         |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``int``                                                     | :ref:`label_size<class_Terrain3D_property_label_size>`                     | ``48``          |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | :ref:`Terrain3DMaterial<class_Terrain3DMaterial>`           | :ref:`material<class_Terrain3D_property_material>`                         |                 |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``int``                                                     | :ref:`mesh_lods<class_Terrain3D_property_mesh_lods>`                       | ``7``           |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``int``                                                     | :ref:`mesh_size<class_Terrain3D_property_mesh_size>`                       | ``48``          |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``int``                                                     | :ref:`mouse_layer<class_Terrain3D_property_mouse_layer>`                   | ``32``          |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``PhysicsMaterial``                                         | :ref:`physics_material<class_Terrain3D_property_physics_material>`         |                 |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | :ref:`RegionSize<enum_Terrain3D_RegionSize>`                | :ref:`region_size<class_Terrain3D_property_region_size>`                   | ``256``         |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``int``                                                     | :ref:`render_layers<class_Terrain3D_property_render_layers>`               | ``2147483649``  |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`save_16_bit<class_Terrain3D_property_save_16_bit>`                   | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_autoshader<class_Terrain3D_property_show_autoshader>`           | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_checkered<class_Terrain3D_property_show_checkered>`             | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_colormap<class_Terrain3D_property_show_colormap>`               | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_control_angle<class_Terrain3D_property_show_control_angle>`     | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_control_blend<class_Terrain3D_property_show_control_blend>`     | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_control_scale<class_Terrain3D_property_show_control_scale>`     | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_control_texture<class_Terrain3D_property_show_control_texture>` | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_grey<class_Terrain3D_property_show_grey>`                       | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_grid<class_Terrain3D_property_show_grid>`                       | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_heightmap<class_Terrain3D_property_show_heightmap>`             | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_instancer_grid<class_Terrain3D_property_show_instancer_grid>`   | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_instances<class_Terrain3D_property_show_instances>`             | ``true``        |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_navigation<class_Terrain3D_property_show_navigation>`           | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_region_grid<class_Terrain3D_property_show_region_grid>`         | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_roughmap<class_Terrain3D_property_show_roughmap>`               | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_texture_height<class_Terrain3D_property_show_texture_height>`   | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_texture_normal<class_Terrain3D_property_show_texture_normal>`   | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_texture_rough<class_Terrain3D_property_show_texture_rough>`     | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``bool``                                                    | :ref:`show_vertex_grid<class_Terrain3D_property_show_vertex_grid>`         | ``false``       |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``String``                                                  | :ref:`version<class_Terrain3D_property_version>`                           | ``"1.0.0-dev"`` |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
-   | ``float``                                                   | :ref:`vertex_spacing<class_Terrain3D_property_vertex_spacing>`             | ``1.0``         |
-   +-------------------------------------------------------------+----------------------------------------------------------------------------+-----------------+
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | :ref:`Terrain3DAssets<class_Terrain3DAssets>`               | :ref:`assets<class_Terrain3D_property_assets>`                             |                |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | RenderingServer.ShadowCastingSetting                        | :ref:`cast_shadows<class_Terrain3D_property_cast_shadows>`                 | ``1``          |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | :ref:`Terrain3DCollision<class_Terrain3DCollision>`         | :ref:`collision<class_Terrain3D_property_collision>`                       |                |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``int``                                                     | :ref:`collision_layer<class_Terrain3D_property_collision_layer>`           | ``1``          |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``int``                                                     | :ref:`collision_mask<class_Terrain3D_property_collision_mask>`             | ``1``          |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | :ref:`CollisionMode<enum_Terrain3DCollision_CollisionMode>` | :ref:`collision_mode<class_Terrain3D_property_collision_mode>`             | ``1``          |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``float``                                                   | :ref:`collision_priority<class_Terrain3D_property_collision_priority>`     | ``1.0``        |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``int``                                                     | :ref:`collision_radius<class_Terrain3D_property_collision_radius>`         | ``64``         |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``int``                                                     | :ref:`collision_shape_size<class_Terrain3D_property_collision_shape_size>` | ``16``         |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``float``                                                   | :ref:`cull_margin<class_Terrain3D_property_cull_margin>`                   | ``0.0``        |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | :ref:`Terrain3DData<class_Terrain3DData>`                   | :ref:`data<class_Terrain3D_property_data>`                                 |                |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``String``                                                  | :ref:`data_directory<class_Terrain3D_property_data_directory>`             | ``""``         |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | :ref:`DebugLevel<enum_Terrain3D_DebugLevel>`                | :ref:`debug_level<class_Terrain3D_property_debug_level>`                   | ``0``          |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`free_editor_textures<class_Terrain3D_property_free_editor_textures>` | ``true``       |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | GeometryInstance3D.GIMode                                   | :ref:`gi_mode<class_Terrain3D_property_gi_mode>`                           | ``1``          |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | :ref:`Terrain3DInstancer<class_Terrain3DInstancer>`         | :ref:`instancer<class_Terrain3D_property_instancer>`                       |                |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``float``                                                   | :ref:`label_distance<class_Terrain3D_property_label_distance>`             | ``0.0``        |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``int``                                                     | :ref:`label_size<class_Terrain3D_property_label_size>`                     | ``48``         |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | :ref:`Terrain3DMaterial<class_Terrain3DMaterial>`           | :ref:`material<class_Terrain3D_property_material>`                         |                |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``int``                                                     | :ref:`mesh_lods<class_Terrain3D_property_mesh_lods>`                       | ``7``          |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``int``                                                     | :ref:`mesh_size<class_Terrain3D_property_mesh_size>`                       | ``48``         |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``int``                                                     | :ref:`mouse_layer<class_Terrain3D_property_mouse_layer>`                   | ``32``         |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``PhysicsMaterial``                                         | :ref:`physics_material<class_Terrain3D_property_physics_material>`         |                |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | :ref:`RegionSize<enum_Terrain3D_RegionSize>`                | :ref:`region_size<class_Terrain3D_property_region_size>`                   | ``256``        |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``int``                                                     | :ref:`render_layers<class_Terrain3D_property_render_layers>`               | ``2147483649`` |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`save_16_bit<class_Terrain3D_property_save_16_bit>`                   | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_autoshader<class_Terrain3D_property_show_autoshader>`           | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_checkered<class_Terrain3D_property_show_checkered>`             | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_colormap<class_Terrain3D_property_show_colormap>`               | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_contours<class_Terrain3D_property_show_contours>`               | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_control_angle<class_Terrain3D_property_show_control_angle>`     | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_control_blend<class_Terrain3D_property_show_control_blend>`     | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_control_scale<class_Terrain3D_property_show_control_scale>`     | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_control_texture<class_Terrain3D_property_show_control_texture>` | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_grey<class_Terrain3D_property_show_grey>`                       | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_grid<class_Terrain3D_property_show_grid>`                       | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_heightmap<class_Terrain3D_property_show_heightmap>`             | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_instancer_grid<class_Terrain3D_property_show_instancer_grid>`   | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_instances<class_Terrain3D_property_show_instances>`             | ``true``       |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_jaggedness<class_Terrain3D_property_show_jaggedness>`           | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_navigation<class_Terrain3D_property_show_navigation>`           | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_region_grid<class_Terrain3D_property_show_region_grid>`         | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_roughmap<class_Terrain3D_property_show_roughmap>`               | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_texture_height<class_Terrain3D_property_show_texture_height>`   | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_texture_normal<class_Terrain3D_property_show_texture_normal>`   | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_texture_rough<class_Terrain3D_property_show_texture_rough>`     | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``bool``                                                    | :ref:`show_vertex_grid<class_Terrain3D_property_show_vertex_grid>`         | ``false``      |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``String``                                                  | :ref:`version<class_Terrain3D_property_version>`                           | ``"1.0.1"``    |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
+   | ``float``                                                   | :ref:`vertex_spacing<class_Terrain3D_property_vertex_spacing>`             | ``1.0``        |
+   +-------------------------------------------------------------+----------------------------------------------------------------------------+----------------+
 
 .. rst-class:: classref-reftable-group
 
@@ -192,6 +196,48 @@ Emitted when :ref:`material<class_Terrain3D_property_material>` is changed.
 
 Enumerations
 ------------
+
+.. _enum_Terrain3D_DebugLevel:
+
+.. rst-class:: classref-enumeration
+
+enum **DebugLevel**: :ref:`🔗<enum_Terrain3D_DebugLevel>`
+
+.. _class_Terrain3D_constant_ERROR:
+
+.. rst-class:: classref-enumeration-constant
+
+:ref:`DebugLevel<enum_Terrain3D_DebugLevel>` **ERROR** = ``0``
+
+Errors and warnings always print.
+
+.. _class_Terrain3D_constant_INFO:
+
+.. rst-class:: classref-enumeration-constant
+
+:ref:`DebugLevel<enum_Terrain3D_DebugLevel>` **INFO** = ``1``
+
+Typically every function call and other important informational messages.
+
+.. _class_Terrain3D_constant_DEBUG:
+
+.. rst-class:: classref-enumeration-constant
+
+:ref:`DebugLevel<enum_Terrain3D_DebugLevel>` **DEBUG** = ``2``
+
+Detailed steps within functions.
+
+.. _class_Terrain3D_constant_EXTREME:
+
+.. rst-class:: classref-enumeration-constant
+
+:ref:`DebugLevel<enum_Terrain3D_DebugLevel>` **EXTREME** = ``3``
+
+Messages for continuous operations like snapping and editing.
+
+.. rst-class:: classref-item-separator
+
+----
 
 .. _enum_Terrain3D_RegionSize:
 
@@ -462,12 +508,12 @@ The directory where terrain data will be saved to and loaded from.
 
 .. rst-class:: classref-property
 
-``int`` **debug_level** = ``0`` :ref:`🔗<class_Terrain3D_property_debug_level>`
+:ref:`DebugLevel<enum_Terrain3D_DebugLevel>` **debug_level** = ``0`` :ref:`🔗<class_Terrain3D_property_debug_level>`
 
 .. rst-class:: classref-property-setget
 
-- |void| **set_debug_level**\ (\ value\: ``int``\ )
-- ``int`` **get_debug_level**\ (\ )
+- |void| **set_debug_level**\ (\ value\: :ref:`DebugLevel<enum_Terrain3D_DebugLevel>`\ )
+- :ref:`DebugLevel<enum_Terrain3D_DebugLevel>` **get_debug_level**\ (\ )
 
 The verbosity of debug messages printed to the console. Errors and warnings are always printed. This can also be set via command line using ``--terrain3d-debug=LEVEL`` where ``LEVEL`` is one of ``ERROR, INFO, DEBUG, EXTREME``. The last includes continuously recurring messages like position updates for the mesh as the camera moves around.
 
@@ -486,7 +532,7 @@ The verbosity of debug messages printed to the console. Errors and warnings are 
 - |void| **set_free_editor_textures**\ (\ value\: ``bool``\ )
 - ``bool`` **get_free_editor_textures**\ (\ )
 
-Frees ground textures used for editing at the start of the game. These textures are used to generate the TextureArrays, so if you don't change any :ref:`Terrain3DTextureAsset<class_Terrain3DTextureAsset>` settings in game, this can be enabled. Calls :ref:`Terrain3DAssets.clear_textures()<class_Terrain3DAssets_method_clear_textures>`.
+Frees ground textures used for editing in _ready(). These textures are used to generate the TextureArrays, so if you don't change any :ref:`Terrain3DTextureAsset<class_Terrain3DTextureAsset>` settings in game, this can be enabled. Also reloads the texture asset list in _enter_tree() in case you load scenes via code and need the textures again. Calls :ref:`Terrain3DAssets.clear_textures()<class_Terrain3DAssets_method_clear_textures>`.
 
 .. rst-class:: classref-item-separator
 
@@ -756,6 +802,23 @@ Alias for :ref:`Terrain3DMaterial.show_colormap<class_Terrain3DMaterial_property
 
 ----
 
+.. _class_Terrain3D_property_show_contours:
+
+.. rst-class:: classref-property
+
+``bool`` **show_contours** = ``false`` :ref:`🔗<class_Terrain3D_property_show_contours>`
+
+.. rst-class:: classref-property-setget
+
+- |void| **set_show_contours**\ (\ value\: ``bool``\ )
+- ``bool`` **get_show_contours**\ (\ )
+
+Alias for :ref:`Terrain3DMaterial.show_contours<class_Terrain3DMaterial_property_show_contours>`. Press `4` with the mouse in the viewport to toggle. Customize in the material.
+
+.. rst-class:: classref-item-separator
+
+----
+
 .. _class_Terrain3D_property_show_control_angle:
 
 .. rst-class:: classref-property
@@ -852,7 +915,7 @@ Alias for :ref:`Terrain3DMaterial.show_grey<class_Terrain3DMaterial_property_sho
 - |void| **set_show_region_grid**\ (\ value\: ``bool``\ )
 - ``bool`` **get_show_region_grid**\ (\ )
 
-Alias for :ref:`Terrain3DMaterial.show_region_grid<class_Terrain3DMaterial_property_show_region_grid>`.
+Alias for :ref:`Terrain3DMaterial.show_region_grid<class_Terrain3DMaterial_property_show_region_grid>`. Press `1` with the mouse in the viewport to toggle.
 
 .. rst-class:: classref-item-separator
 
@@ -886,7 +949,7 @@ Alias for :ref:`Terrain3DMaterial.show_heightmap<class_Terrain3DMaterial_propert
 - |void| **set_show_instancer_grid**\ (\ value\: ``bool``\ )
 - ``bool`` **get_show_instancer_grid**\ (\ )
 
-Alias for :ref:`Terrain3DMaterial.show_instancer_grid<class_Terrain3DMaterial_property_show_instancer_grid>`.
+Alias for :ref:`Terrain3DMaterial.show_instancer_grid<class_Terrain3DMaterial_property_show_instancer_grid>`. Press `2` with the mouse in the viewport to toggle.
 
 .. rst-class:: classref-item-separator
 
@@ -904,6 +967,23 @@ Alias for :ref:`Terrain3DMaterial.show_instancer_grid<class_Terrain3DMaterial_pr
 - ``bool`` **get_show_instances**\ (\ )
 
 Shows or hides all instancer meshes.
+
+.. rst-class:: classref-item-separator
+
+----
+
+.. _class_Terrain3D_property_show_jaggedness:
+
+.. rst-class:: classref-property
+
+``bool`` **show_jaggedness** = ``false`` :ref:`🔗<class_Terrain3D_property_show_jaggedness>`
+
+.. rst-class:: classref-property-setget
+
+- |void| **set_show_jaggedness**\ (\ value\: ``bool``\ )
+- ``bool`` **get_show_jaggedness**\ (\ )
+
+Alias for :ref:`Terrain3DMaterial.show_jaggedness<class_Terrain3DMaterial_property_show_jaggedness>`.
 
 .. rst-class:: classref-item-separator
 
@@ -937,7 +1017,7 @@ Alias for :ref:`Terrain3DMaterial.show_navigation<class_Terrain3DMaterial_proper
 - |void| **set_show_region_grid**\ (\ value\: ``bool``\ )
 - ``bool`` **get_show_region_grid**\ (\ )
 
-Alias for :ref:`Terrain3DMaterial.show_region_grid<class_Terrain3DMaterial_property_show_region_grid>`.
+Alias for :ref:`Terrain3DMaterial.show_region_grid<class_Terrain3DMaterial_property_show_region_grid>`. Press `1` with the mouse in the viewport to toggle.
 
 .. rst-class:: classref-item-separator
 
@@ -954,7 +1034,7 @@ Alias for :ref:`Terrain3DMaterial.show_region_grid<class_Terrain3DMaterial_prope
 - |void| **set_show_roughmap**\ (\ value\: ``bool``\ )
 - ``bool`` **get_show_roughmap**\ (\ )
 
-Alias for :ref:`Terrain3DMaterial.show_autoshader<class_Terrain3DMaterial_property_show_autoshader>`.
+Alias for :ref:`Terrain3DMaterial.show_roughmap<class_Terrain3DMaterial_property_show_roughmap>`.
 
 .. rst-class:: classref-item-separator
 
@@ -1022,7 +1102,7 @@ Alias for :ref:`Terrain3DMaterial.show_texture_rough<class_Terrain3DMaterial_pro
 - |void| **set_show_vertex_grid**\ (\ value\: ``bool``\ )
 - ``bool`` **get_show_vertex_grid**\ (\ )
 
-Alias for :ref:`Terrain3DMaterial.show_vertex_grid<class_Terrain3DMaterial_property_show_vertex_grid>`.
+Alias for :ref:`Terrain3DMaterial.show_vertex_grid<class_Terrain3DMaterial_property_show_vertex_grid>`. Press `3` with the mouse in the viewport to toggle.
 
 .. rst-class:: classref-item-separator
 
@@ -1032,7 +1112,7 @@ Alias for :ref:`Terrain3DMaterial.show_vertex_grid<class_Terrain3DMaterial_prope
 
 .. rst-class:: classref-property
 
-``String`` **version** = ``"1.0.0-dev"`` :ref:`🔗<class_Terrain3D_property_version>`
+``String`` **version** = ``"1.0.1"`` :ref:`🔗<class_Terrain3D_property_version>`
 
 .. rst-class:: classref-property-setget
 

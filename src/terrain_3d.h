@@ -28,6 +28,15 @@ class Terrain3D : public Node3D {
 	CLASS_NAME();
 
 public: // Constants
+	enum DebugLevel {
+		MESG = -2, // Always print except in release builds
+		WARN = -1, // Always print except in release builds
+		ERROR = 0, // Always print except in release builds
+		INFO = 1, // Print every function call and important entries
+		DEBUG = 2, // Print details within functions
+		EXTREME = 3, // Continuous operations like snapping
+	};
+
 	enum RegionSize {
 		SIZE_64 = 64,
 		SIZE_128 = 128,
@@ -38,7 +47,7 @@ public: // Constants
 	};
 
 private:
-	String _version = "1.0.0";
+	String _version = "1.0.1";
 	String _data_directory;
 	bool _is_inside_world = false;
 	bool _initialized = false;
@@ -110,7 +119,7 @@ private:
 			const Terrain3DData::HeightFilter p_filter, const bool require_nav, const int32_t x, const int32_t z) const;
 
 public:
-	static int debug_level;
+	static DebugLevel debug_level; // Initialized in terrain_3d.cpp
 
 	Terrain3D();
 	~Terrain3D() {}
@@ -118,8 +127,8 @@ public:
 
 	// Terrain
 	String get_version() const { return _version; }
-	void set_debug_level(const int p_level);
-	int get_debug_level() const { return debug_level; }
+	void set_debug_level(const DebugLevel p_level);
+	DebugLevel get_debug_level() const { return debug_level; }
 	void set_data_directory(String p_dir);
 	String get_data_directory() const { return _data ? _data_directory : ""; }
 
@@ -202,6 +211,18 @@ public:
 	void set_physics_material(const Ref<PhysicsMaterial> &p_mat) { _collision ? _collision->set_physics_material(p_mat) : void(); }
 	Ref<PhysicsMaterial> get_physics_material() const { return _collision ? _collision->get_physics_material() : Ref<PhysicsMaterial>(); }
 
+	// Overlay Aliases
+	void set_show_region_grid(const bool p_enabled) { _material.is_valid() ? _material->set_show_region_grid(p_enabled) : void(); }
+	bool get_show_region_grid() const { return _material.is_valid() ? _material->get_show_region_grid() : false; }
+	void set_show_instancer_grid(const bool p_enabled) { _material.is_valid() ? _material->set_show_instancer_grid(p_enabled) : void(); }
+	bool get_show_instancer_grid() const { return _material.is_valid() ? _material->get_show_instancer_grid() : false; }
+	void set_show_vertex_grid(const bool p_enabled) { _material.is_valid() ? _material->set_show_vertex_grid(p_enabled) : void(); }
+	bool get_show_vertex_grid() const { return _material.is_valid() ? _material->get_show_vertex_grid() : false; }
+	void set_show_contours(const bool p_enabled) { _material.is_valid() ? _material->set_show_contours(p_enabled) : void(); }
+	bool get_show_contours() const { return _material.is_valid() ? _material->get_show_contours() : false; }
+	void set_show_navigation(const bool p_enabled) { _material.is_valid() ? _material->set_show_navigation(p_enabled) : void(); }
+	bool get_show_navigation() const { return _material.is_valid() ? _material->get_show_navigation() : false; }
+
 	// Debug View Aliases
 	void set_show_checkered(const bool p_enabled) { _material.is_valid() ? _material->set_show_checkered(p_enabled) : void(); }
 	bool get_show_checkered() const { return _material.is_valid() ? _material->get_show_checkered() : false; }
@@ -209,6 +230,8 @@ public:
 	bool get_show_grey() const { return _material.is_valid() ? _material->get_show_grey() : false; }
 	void set_show_heightmap(const bool p_enabled) { _material.is_valid() ? _material->set_show_heightmap(p_enabled) : void(); }
 	bool get_show_heightmap() const { return _material.is_valid() ? _material->get_show_heightmap() : false; }
+	void set_show_jaggedness(const bool p_enabled) { _material.is_valid() ? _material->set_show_jaggedness(p_enabled) : void(); }
+	bool get_show_jaggedness() const { return _material.is_valid() ? _material->get_show_jaggedness() : false; }
 	void set_show_colormap(const bool p_enabled) { _material.is_valid() ? _material->set_show_colormap(p_enabled) : void(); }
 	bool get_show_colormap() const { return _material.is_valid() ? _material->get_show_colormap() : false; }
 	void set_show_roughmap(const bool p_enabled) { _material.is_valid() ? _material->set_show_roughmap(p_enabled) : void(); }
@@ -223,20 +246,12 @@ public:
 	bool get_show_control_blend() const { return _material.is_valid() ? _material->get_show_control_blend() : false; }
 	void set_show_autoshader(const bool p_enabled) { _material.is_valid() ? _material->set_show_autoshader(p_enabled) : void(); }
 	bool get_show_autoshader() const { return _material.is_valid() ? _material->get_show_autoshader() : false; }
-	void set_show_navigation(const bool p_enabled) { _material.is_valid() ? _material->set_show_navigation(p_enabled) : void(); }
-	bool get_show_navigation() const { return _material.is_valid() ? _material->get_show_navigation() : false; }
 	void set_show_texture_height(const bool p_enabled) { _material.is_valid() ? _material->set_show_texture_height(p_enabled) : void(); }
 	bool get_show_texture_height() const { return _material.is_valid() ? _material->get_show_texture_height() : false; }
 	void set_show_texture_normal(const bool p_enabled) { _material.is_valid() ? _material->set_show_texture_normal(p_enabled) : void(); }
 	bool get_show_texture_normal() const { return _material.is_valid() ? _material->get_show_texture_normal() : false; }
 	void set_show_texture_rough(const bool p_enabled) { _material.is_valid() ? _material->set_show_texture_rough(p_enabled) : void(); }
 	bool get_show_texture_rough() const { return _material.is_valid() ? _material->get_show_texture_rough() : false; }
-	void set_show_region_grid(const bool p_enabled) { _material.is_valid() ? _material->set_show_region_grid(p_enabled) : void(); }
-	bool get_show_region_grid() const { return _material.is_valid() ? _material->get_show_region_grid() : false; }
-	void set_show_instancer_grid(const bool p_enabled) { _material.is_valid() ? _material->set_show_instancer_grid(p_enabled) : void(); }
-	bool get_show_instancer_grid() const { return _material.is_valid() ? _material->get_show_instancer_grid() : false; }
-	void set_show_vertex_grid(const bool p_enabled) { _material.is_valid() ? _material->set_show_vertex_grid(p_enabled) : void(); }
-	bool get_show_vertex_grid() const { return _material.is_valid() ? _material->get_show_vertex_grid() : false; }
 
 protected:
 	void _notification(const int p_what);
@@ -244,5 +259,13 @@ protected:
 };
 
 VARIANT_ENUM_CAST(Terrain3D::RegionSize);
+VARIANT_ENUM_CAST(Terrain3D::DebugLevel);
+
+constexpr Terrain3D::DebugLevel MESG = Terrain3D::DebugLevel::MESG;
+constexpr Terrain3D::DebugLevel WARN = Terrain3D::DebugLevel::WARN;
+constexpr Terrain3D::DebugLevel ERROR = Terrain3D::DebugLevel::ERROR;
+constexpr Terrain3D::DebugLevel INFO = Terrain3D::DebugLevel::INFO;
+constexpr Terrain3D::DebugLevel DEBUG = Terrain3D::DebugLevel::DEBUG;
+constexpr Terrain3D::DebugLevel EXTREME = Terrain3D::DebugLevel::EXTREME;
 
 #endif // TERRAIN3D_CLASS_H
