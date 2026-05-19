@@ -377,7 +377,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 
 							// Add asset id, and increase weighting
 							case ADD: {
-								real_t spray_strength = CLAMP(strength * 0.05f, 0.004f, .25f);
+								real_t spray_strength = CLAMP(strength * 0.05f, 0.004f, 1.0f);
 								real_t brush_value = CLAMP(brush_alpha * spray_strength, 0.f, 1.f);
 								if (enable_texture && brush_alpha * strength * 11.f > 0.1f) {
 									// Pick lowest weighted id, and lower to zero before setting new asset id.
@@ -431,7 +431,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 
 							// Lower weight of current asset id
 							case SUBTRACT: {
-								real_t spray_strength = CLAMP(strength * 0.05f, 0.004f, .25f);
+								real_t spray_strength = CLAMP(strength * 0.05f, 0.004f, 1.0f);
 								real_t brush_value = CLAMP(brush_alpha * spray_strength, 0.f, 1.f);
 								if (base_id == asset_id) {
 									blend = CLAMP(blend + brush_value, 0.f, 1.f);
@@ -541,7 +541,7 @@ void Terrain3DEditor::_operate_map(const Vector3 &p_global_position, const real_
 							else {
 								switch (_operation){
 									case ADD:
-										grass = Math::lerp(grass, grass_height, strength * brush_alpha);
+										grass = Math::lerp(grass, grass_height, CLAMP(strength * brush_alpha, .0f, 1.0f));
 									break;
 								}
 							}
