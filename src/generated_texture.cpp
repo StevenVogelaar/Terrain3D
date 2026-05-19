@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 // Copyright © 2024 Cory Petkovsek, Roope Palmroos, and Contributors.
+=======
+// Copyright © 2023-2026 Cory Petkovsek, Roope Palmroos, and Contributors.
+>>>>>>> v1.0.2-stable
 
 #include <godot_cpp/classes/rendering_server.hpp>
 

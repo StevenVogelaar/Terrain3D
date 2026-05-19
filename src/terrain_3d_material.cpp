@@ -1,4 +1,4 @@
-// Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
+// Copyright © 2023-2026 Cory Petkovsek, Roope Palmroos, and Contributors.
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/fast_noise_lite.hpp>
@@ -842,7 +842,7 @@ void Terrain3DMaterial::_get_property_list(List<PropertyInfo> *p_list) const {
 		param_list = RS->get_shader_parameter_list(get_shader_rid());
 	}
 
-	_active_params.clear();
+	TypedArray<StringName> new_active_params;
 	for (int i = 0; i < param_list.size(); i++) {
 		Dictionary dict = param_list[i];
 		StringName name = dict["name"];
@@ -859,7 +859,7 @@ void Terrain3DMaterial::_get_property_list(List<PropertyInfo> *p_list) const {
 			p_list->push_back(pi);
 
 			// Populate list of public parameters for current shader
-			_active_params.push_back(name);
+			new_active_params.push_back(name);
 
 			// Store this param in a dictionary that is saved in the resource file
 			// Initially set with default value
@@ -871,7 +871,7 @@ void Terrain3DMaterial::_get_property_list(List<PropertyInfo> *p_list) const {
 			}
 		}
 	}
-	return;
+	_active_params = new_active_params;
 }
 
 // Flag uniforms with non-default values
